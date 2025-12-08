@@ -33,86 +33,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-
-// Mock data for demonstration
-const mockAlerts: Alert[] = [
-  {
-    id: '1',
-    type: 'FLOOD',
-    severity: 'HIGH',
-    title: 'Flood Warning - Kelani River',
-    message: 'Water levels rising rapidly. Residents in low-lying areas advised to evacuate.',
-    districts: ['Colombo', 'Gampaha'],
-    source: 'DMC',
-    startsAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    isActive: true
-  },
-  {
-    id: '2',
-    type: 'WEATHER',
-    severity: 'MEDIUM',
-    title: 'Heavy Rainfall Expected',
-    message: 'Heavy rainfall expected in Western and Southern provinces over the next 24 hours.',
-    districts: ['Colombo', 'Kalutara', 'Galle'],
-    source: 'Met Dept',
-    startsAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
-    isActive: true
-  }
-];
-
-const mockShelters: Shelter[] = [
-  {
-    id: '1',
-    name: 'Colombo Municipal School',
-    type: 'SCHOOL',
-    address: '123 Main Street, Colombo 07',
-    district: 'Colombo',
-    latitude: 6.9271,
-    longitude: 79.8612,
-    totalCapacity: 500,
-    currentOccupancy: 320,
-    availableSpace: 180,
-    status: 'ACTIVE',
-    facilities: {
-      hasMedical: true,
-      hasFood: true,
-      hasWater: true,
-      hasSanitation: true,
-      hasElectricity: true,
-      hasInternet: false,
-      isAccessible: true
-    },
-    contact: { name: 'Mr. Silva', phone: '0112345678' },
-    needs: [],
-    distance: 2.5
-  },
-  {
-    id: '2',
-    name: 'Kelaniya Temple Relief Camp',
-    type: 'TEMPLE',
-    address: 'Temple Road, Kelaniya',
-    district: 'Gampaha',
-    latitude: 6.9553,
-    longitude: 79.9225,
-    totalCapacity: 300,
-    currentOccupancy: 280,
-    availableSpace: 20,
-    status: 'ACTIVE',
-    facilities: {
-      hasMedical: false,
-      hasFood: true,
-      hasWater: true,
-      hasSanitation: true,
-      hasElectricity: true,
-      hasInternet: false,
-      isAccessible: false
-    },
-    contact: { name: 'Rev. Thero', phone: '0112987654' },
-    needs: [],
-    distance: 5.2
-  }
-];
-
 export function Dashboard() {
   const navigate = useNavigate();
   const { location, isLoading: locationLoading, error: locationError } = useGeolocation();
@@ -121,6 +41,42 @@ export function Dashboard() {
   const { shelters, isLoading: sheltersLoading, getNearestShelters } = useShelters(location);
   const [criticalAlert, setCriticalAlert] = useState<Alert | null>(null);
   const [showBanner, setShowBanner] = useState(true);
+  const [stats, setStats] = useState({
+    totalCases: 0,
+    activeShelters: 0,
+    activeVolunteers: 0,
+    peopleHelped: 0
+  });
+
+  // Fetch dashboard stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      const [casesRes, sheltersRes, volunteersRes, beneficiariesRes] = await Promise.all([
+        supabase.from('cases').select('id', { count: 'exact', head: true }),
+        supabase.from('shelters').select('id', { count: 'exact', head: true }).eq('status', 'ACTIVE'),
+        supabase.from('volunteers').select('id', { count: 'exact', head: true }).eq('status', 'ACTIVE'),
+        supabase.from('beneficiaries').select('household_size')
+      ]);
+
+      const totalPeople = (beneficiariesRes.data || []).reduce((sum, b) => sum + (b.household_size || 1), 0);
+
+      setStats({
+        totalCases: casesRes.count || 0,
+        activeShelters: sheltersRes.count || 0,
+        activeVolunteers: volunteersRes.count || 0,
+        peopleHelped: totalPeople
+      });
+    };
+
+    fetchStats();
+
+    // Subscribe to realtime updates
+    const unsubscribe = realtimeService.subscribeToDashboard(() => {
+      fetchStats();
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (hookCriticalAlert) {

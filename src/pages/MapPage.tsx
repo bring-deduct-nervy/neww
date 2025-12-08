@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { EmergencyReport, Shelter, Alert, SeverityLevel } from "@/lib/types";
 import { SEVERITY_CONFIG, SHELTER_STATUS_CONFIG } from "@/lib/constants";
+import { supabase } from "@/lib/supabase";
+import { realtimeService } from "@/lib/api/realtime-service";
 import {
   Map,
   Layers,
@@ -19,13 +21,14 @@ import {
   ZoomOut,
   Locate,
   Filter,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-// Mock data for map markers
-const mockEmergencies: EmergencyReport[] = [
+// Fallback data for map markers
+const fallbackEmergencies: EmergencyReport[] = [
   {
     id: '1',
     category: 'FLOOD_TRAPPED',
@@ -97,7 +100,7 @@ const mockEmergencies: EmergencyReport[] = [
   }
 ];
 
-const mockShelters: Shelter[] = [
+const fallbackShelters: Shelter[] = [
   {
     id: '1',
     name: 'Colombo Municipal School',
@@ -172,10 +175,106 @@ export function MapPage() {
   const [activeLayer, setActiveLayer] = useState<'all' | 'emergencies' | 'shelters' | 'flood'>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [zoom, setZoom] = useState(12);
+  const [emergencies, setEmergencies] = useState<EmergencyReport[]>([]);
+  const [shelters, setShelters] = useState<Shelter[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMapData();
+
+    const unsubscribeEmergencies = realtimeService.subscribe({
+      table: 'emergency_reports',
+      callback: () => fetchMapData()
+    });
+
+    const unsubscribeShelters = realtimeService.subscribe({
+      table: 'shelters',
+      callback: () => fetchMapData()
+    });
+
+    return () => {
+      unsubscribeEmergencies();
+      unsubscribeShelters();
+    };
+  }, []);
+
+  const fetchMapData = async () => {
+    try {
+      const [emergencyRes, shelterRes] = await Promise.all([
+        supabase.from('emergency_reports').select('*').order('created_at', { ascending: false }),
+        supabase.from('shelters').select('*').eq('status', 'ACTIVE')
+      ]);
+
+      if (emergencyRes.data && emergencyRes.data.length > 0) {
+        const mapped = emergencyRes.data.map((e: any) => ({
+          id: e.id,
+          category: e.category || 'OTHER',
+          severity: e.severity || 'MEDIUM',
+          title: e.description?.substring(0, 50) || 'Emergency Report',
+          description: e.description || '',
+          latitude: e.latitude,
+          longitude: e.longitude,
+          address: e.address || '',
+          district: e.district || '',
+          peopleAffected: 1,
+          hasChildren: false,
+          hasElderly: false,
+          hasDisabled: false,
+          hasMedicalNeeds: e.category === 'MEDICAL',
+          contactName: e.reporter_name || '',
+          contactPhone: e.reporter_phone || '',
+          isAnonymous: !e.reporter_name,
+          images: [],
+          status: e.status || 'PENDING',
+          createdAt: new Date(e.created_at),
+          updatedAt: new Date(e.updated_at || e.created_at)
+        }));
+        setEmergencies(mapped);
+      } else {
+        setEmergencies(fallbackEmergencies);
+      }
+
+      if (shelterRes.data && shelterRes.data.length > 0) {
+        const mapped = shelterRes.data.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          type: s.type || 'TEMPORARY',
+          address: s.address,
+          district: s.district,
+          latitude: s.latitude,
+          longitude: s.longitude,
+          totalCapacity: s.total_capacity || 0,
+          currentOccupancy: s.current_occupancy || 0,
+          availableSpace: (s.total_capacity || 0) - (s.current_occupancy || 0),
+          status: s.status || 'ACTIVE',
+          facilities: {
+            hasMedical: s.has_medical || false,
+            hasFood: s.has_food || false,
+            hasWater: s.has_water || false,
+            hasSanitation: s.has_sanitation || false,
+            hasElectricity: s.has_electricity || false,
+            hasInternet: s.has_internet || false,
+            isAccessible: s.is_accessible || false
+          },
+          contact: { name: s.contact_name || '', phone: s.contact_phone || '' },
+          needs: s.needs || []
+        }));
+        setShelters(mapped);
+      } else {
+        setShelters(fallbackShelters);
+      }
+    } catch (err) {
+      console.error('Error fetching map data:', err);
+      setEmergencies(fallbackEmergencies);
+      setShelters(fallbackShelters);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await fetchMapData();
     setIsRefreshing(false);
   };
 
@@ -226,7 +325,7 @@ export function MapPage() {
             label="Emergencies"
             isActive={activeLayer === 'emergencies'}
             onClick={() => setActiveLayer('emergencies')}
-            count={mockEmergencies.length}
+            count={emergencies.length}
             color="red"
           />
           <LayerButton
@@ -234,7 +333,7 @@ export function MapPage() {
             label="Shelters"
             isActive={activeLayer === 'shelters'}
             onClick={() => setActiveLayer('shelters')}
-            count={mockShelters.length}
+            count={shelters.length}
             color="green"
           />
           <LayerButton
@@ -309,7 +408,7 @@ export function MapPage() {
             ))}
 
             {/* Emergency Markers */}
-            {(activeLayer === 'all' || activeLayer === 'emergencies') && mockEmergencies.map((emergency, index) => (
+            {(activeLayer === 'all' || activeLayer === 'emergencies') && emergencies.map((emergency, index) => (
               <motion.button
                 key={emergency.id}
                 initial={{ scale: 0, y: 20 }}
@@ -334,7 +433,7 @@ export function MapPage() {
             ))}
 
             {/* Shelter Markers */}
-            {(activeLayer === 'all' || activeLayer === 'shelters') && mockShelters.map((shelter, index) => (
+            {(activeLayer === 'all' || activeLayer === 'shelters') && shelters.map((shelter, index) => (
               <motion.button
                 key={shelter.id}
                 initial={{ scale: 0, y: 20 }}

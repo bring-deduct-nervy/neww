@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCard } from "@/components/alerts/AlertCard";
 import { Alert, SeverityLevel } from "@/lib/types";
-import { AlertTriangle, Bell, Filter, RefreshCw } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { realtimeService } from "@/lib/api/realtime-service";
+import { AlertTriangle, Bell, Filter, RefreshCw, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
-// Mock alerts data
-const mockAlerts: Alert[] = [
+// Fallback alerts data
+const fallbackAlerts: Alert[] = [
   {
     id: '1',
     type: 'FLOOD',
@@ -70,24 +72,79 @@ const mockAlerts: Alert[] = [
 export function AlertsPage() {
   const [selectedSeverity, setSelectedSeverity] = useState<SeverityLevel | 'ALL'>('ALL');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAlerts();
+
+    const unsubscribe = realtimeService.subscribe({
+      table: 'alerts',
+      callback: () => fetchAlerts()
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const fetchAlerts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('alerts')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const mapped = data.map((a: any) => ({
+          id: a.id,
+          type: a.type,
+          severity: a.severity,
+          title: a.title,
+          message: a.message,
+          districts: a.districts || [],
+          source: a.source,
+          startsAt: new Date(a.starts_at || a.created_at),
+          expiresAt: a.expires_at ? new Date(a.expires_at) : undefined,
+          isActive: a.is_active
+        }));
+        setAlerts(mapped);
+      } else {
+        setAlerts(fallbackAlerts);
+      }
+    } catch (err) {
+      console.error('Error fetching alerts:', err);
+      setAlerts(fallbackAlerts);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredAlerts = selectedSeverity === 'ALL'
-    ? mockAlerts
-    : mockAlerts.filter(a => a.severity === selectedSeverity);
+    ? alerts
+    : alerts.filter(a => a.severity === selectedSeverity);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await fetchAlerts();
     setIsRefreshing(false);
   };
 
   const severityCounts = {
-    CRITICAL: mockAlerts.filter(a => a.severity === 'CRITICAL').length,
-    HIGH: mockAlerts.filter(a => a.severity === 'HIGH').length,
-    MEDIUM: mockAlerts.filter(a => a.severity === 'MEDIUM').length,
-    LOW: mockAlerts.filter(a => a.severity === 'LOW').length,
+    CRITICAL: alerts.filter(a => a.severity === 'CRITICAL').length,
+    HIGH: alerts.filter(a => a.severity === 'HIGH').length,
+    MEDIUM: alerts.filter(a => a.severity === 'MEDIUM').length,
+    LOW: alerts.filter(a => a.severity === 'LOW').length,
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-20">
@@ -104,7 +161,7 @@ export function AlertsPage() {
               Active Alerts
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {mockAlerts.length} active alerts in your area
+              {alerts.length} active alerts in your area
             </p>
           </div>
           <Button

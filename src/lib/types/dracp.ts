@@ -86,17 +86,17 @@ export interface AidItem {
 }
 
 export type AidCategory =
-  | 'FOOD_SUPPLIES'
-  | 'DRINKING_WATER'
-  | 'WASHING_ITEMS'
-  | 'CLOTHING'
-  | 'SHELTER'
+  | 'FOOD'
+  | 'WATER'
   | 'MEDICAL'
-  | 'BABY_SUPPLIES'
-  | 'ELDERLY_CARE'
-  | 'FINANCIAL'
-  | 'TRANSPORTATION'
-  | 'INFORMATION'
+  | 'SHELTER'
+  | 'EVACUATION'
+  | 'RESCUE'
+  | 'CLOTHING'
+  | 'SANITATION'
+  | 'ELECTRICITY'
+  | 'COMMUNICATION'
+  | 'TRANSPORT'
   | 'OTHER';
 
 export type CasePriority =
@@ -106,15 +106,13 @@ export type CasePriority =
   | 'LOW';     // Information only, respond within 72 hours
 
 export type CaseStatus =
-  | 'NEW'           // Just created
-  | 'TRIAGED'       // Assessed and prioritized
-  | 'ASSIGNED'      // Assigned to volunteer
-  | 'IN_PROGRESS'   // Being worked on
-  | 'PENDING_AID'   // Waiting for resources
-  | 'AID_DISPATCHED'// Aid sent
-  | 'RESOLVED'      // Successfully completed
-  | 'CLOSED'        // Closed without resolution
-  | 'DUPLICATE';    // Duplicate case
+  | 'PENDING'        // Just created
+  | 'ASSIGNED'       // Assigned to volunteer
+  | 'IN_PROGRESS'    // Being worked on
+  | 'ON_HOLD'        // Waiting for resources
+  | 'RESOLVED'       // Successfully completed
+  | 'CLOSED'         // Closed without resolution
+  | 'CANCELLED';     // Cancelled case
 
 export type Vulnerability =
   | 'ELDERLY'

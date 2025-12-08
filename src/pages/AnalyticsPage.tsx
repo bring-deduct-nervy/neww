@@ -64,8 +64,8 @@ export function AnalyticsPage() {
       setStats({
         cases: {
           total: casesData.length,
-          new: casesData.filter(c => c.status === 'NEW').length,
-          inProgress: casesData.filter(c => ['ASSIGNED', 'IN_PROGRESS', 'PENDING_AID'].includes(c.status)).length,
+          new: casesData.filter(c => c.status === 'PENDING').length,
+          inProgress: casesData.filter(c => ['ASSIGNED', 'IN_PROGRESS', 'ON_HOLD'].includes(c.status)).length,
           resolved: resolvedCases.length,
           byPriority: CASE_PRIORITIES.reduce((acc, p) => {
             acc[p.id] = casesData.filter(c => c.priority === p.id).length;

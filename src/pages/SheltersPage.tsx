@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,11 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { ShelterCard } from "@/components/shelters/ShelterCard";
 import { Shelter, ShelterStatus } from "@/lib/types";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { Building2, Search, Filter, MapPin, RefreshCw } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { realtimeService } from "@/lib/api/realtime-service";
+import { Building2, Search, Filter, MapPin, RefreshCw, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
-// Mock shelters data
-const mockShelters: Shelter[] = [
+// Fallback shelters data
+const fallbackShelters: Shelter[] = [
   {
     id: '1',
     name: 'Colombo Municipal School',
@@ -118,8 +120,80 @@ export function SheltersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ShelterStatus | 'ALL'>('ALL');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [shelters, setShelters] = useState<Shelter[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredShelters = mockShelters
+  useEffect(() => {
+    fetchShelters();
+
+    const unsubscribe = realtimeService.subscribe({
+      table: 'shelters',
+      callback: () => fetchShelters()
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const fetchShelters = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('shelters')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const mapped = data.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          type: s.type || 'TEMPORARY',
+          address: s.address,
+          district: s.district,
+          latitude: s.latitude,
+          longitude: s.longitude,
+          totalCapacity: s.total_capacity || 0,
+          currentOccupancy: s.current_occupancy || 0,
+          availableSpace: (s.total_capacity || 0) - (s.current_occupancy || 0),
+          status: s.status || 'ACTIVE',
+          facilities: {
+            hasMedical: s.has_medical || false,
+            hasFood: s.has_food || false,
+            hasWater: s.has_water || false,
+            hasSanitation: s.has_sanitation || false,
+            hasElectricity: s.has_electricity || false,
+            hasInternet: s.has_internet || false,
+            isAccessible: s.is_accessible || false
+          },
+          contact: { name: s.contact_name || '', phone: s.contact_phone || '' },
+          needs: s.needs || [],
+          distance: location ? calculateDistance(location.latitude, location.longitude, s.latitude, s.longitude) : undefined
+        }));
+        setShelters(mapped);
+      } else {
+        setShelters(fallbackShelters);
+      }
+    } catch (err) {
+      console.error('Error fetching shelters:', err);
+      setShelters(fallbackShelters);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    if (!lat2 || !lon2) return 0;
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return Math.round(R * c * 10) / 10;
+  };
+
+  const filteredShelters = shelters
     .filter(shelter => {
       const matchesSearch = shelter.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         shelter.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -131,18 +205,26 @@ export function SheltersPage() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await fetchShelters();
     setIsRefreshing(false);
   };
 
   const statusCounts = {
-    ACTIVE: mockShelters.filter(s => s.status === 'ACTIVE').length,
-    FULL: mockShelters.filter(s => s.status === 'FULL').length,
-    CLOSED: mockShelters.filter(s => s.status === 'CLOSED').length,
+    ACTIVE: shelters.filter(s => s.status === 'ACTIVE').length,
+    FULL: shelters.filter(s => s.status === 'FULL').length,
+    CLOSED: shelters.filter(s => s.status === 'CLOSED').length,
   };
 
-  const totalCapacity = mockShelters.reduce((sum, s) => sum + s.totalCapacity, 0);
-  const totalOccupancy = mockShelters.reduce((sum, s) => sum + s.currentOccupancy, 0);
+  const totalCapacity = shelters.reduce((sum, s) => sum + s.totalCapacity, 0);
+  const totalOccupancy = shelters.reduce((sum, s) => sum + s.currentOccupancy, 0);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-20">
@@ -159,7 +241,7 @@ export function SheltersPage() {
               Relief Shelters
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {mockShelters.length} shelters available
+              {shelters.length} shelters available
             </p>
           </div>
           <Button

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,9 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Case, CaseStatus, Volunteer, SLAMetrics } from "@/lib/types/dracp";
 import { CASE_STATUSES, CASE_PRIORITIES, AID_CATEGORIES } from "@/lib/constants/dracp";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { realtimeService } from "@/lib/api/realtime-service";
 import {
   User,
   ClipboardList,
@@ -20,13 +23,15 @@ import {
   Timer,
   AlertTriangle,
   Target,
-  Zap
+  Zap,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-// Mock volunteer data
-const mockVolunteer: Volunteer = {
+// Fallback volunteer data
+const fallbackVolunteer: Volunteer = {
   id: 'v1',
   userId: 'u1',
   name: 'Kasun Perera',
@@ -40,7 +45,7 @@ const mockVolunteer: Volunteer = {
   registeredAt: new Date('2024-01-15'),
   verifiedAt: new Date('2024-01-16'),
   isVerified: true,
-  assignedCases: [],
+  displayCases: [],
   completedCases: 45,
   slaMetrics: {
     totalCasesHandled: 52,
@@ -59,7 +64,7 @@ const mockVolunteer: Volunteer = {
 };
 
 // Mock assigned cases
-const mockAssignedCases: Case[] = [
+const fallbackAssignedCases: Case[] = [
   {
     id: '1',
     caseNumber: 'SOS-20241208-0001',
@@ -131,9 +136,136 @@ const mockAssignedCases: Case[] = [
 ];
 
 export function VolunteerDashboardPage() {
+  const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState('assigned');
-  const volunteer = mockVolunteer;
-  const assignedCases = mockAssignedCases;
+  const [volunteer, setVolunteer] = useState<Volunteer | null>(null);
+  const [assignedCases, setAssignedCases] = useState<Case[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchVolunteerData();
+
+    const unsubscribe = realtimeService.subscribe({
+      table: 'cases',
+      callback: () => fetchVolunteerData()
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const fetchVolunteerData = async () => {
+    if (!user) {
+      setVolunteer(fallbackVolunteer);
+      setAssignedCases(fallbackAssignedCases);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Fetch volunteer profile
+      const { data: volunteerData } = await supabase
+        .from('volunteers')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (volunteerData) {
+        const mappedVolunteer: Volunteer = {
+          id: volunteerData.id,
+          userId: volunteerData.user_id,
+          name: volunteerData.name,
+          phone: volunteerData.phone,
+          email: volunteerData.email,
+          district: volunteerData.district,
+          skills: volunteerData.skills || [],
+          availability: volunteerData.availability || 'ON_CALL',
+          status: volunteerData.status || 'ACTIVE',
+          role: volunteerData.role || 'FIELD_WORKER',
+          registeredAt: new Date(volunteerData.created_at),
+          verifiedAt: volunteerData.verified_at ? new Date(volunteerData.verified_at) : undefined,
+          isVerified: volunteerData.is_verified || false,
+          displayCases: [],
+          completedCases: volunteerData.completed_cases || 0,
+          slaMetrics: {
+            totalCasesHandled: volunteerData.total_cases_handled || 0,
+            casesResolvedOnTime: volunteerData.cases_resolved_on_time || 0,
+            averageResponseTime: volunteerData.average_response_time || 0,
+            averageResolutionTime: volunteerData.average_resolution_time || 0,
+            slaComplianceRate: volunteerData.sla_compliance_rate || 0,
+            customerSatisfactionScore: volunteerData.customer_satisfaction_score || 0
+          },
+          rating: volunteerData.rating || 0,
+          badges: []
+        };
+        setVolunteer(mappedVolunteer);
+
+        // Fetch assigned cases
+        const { data: casesData } = await supabase
+          .from('cases')
+          .select('*, beneficiaries(*)')
+          .eq('assigned_volunteer_id', volunteerData.id)
+          .in('status', ['ASSIGNED', 'IN_PROGRESS', 'ON_HOLD'])
+          .order('created_at', { ascending: false });
+
+        if (casesData) {
+          const mappedCases = casesData.map((c: any) => ({
+            id: c.id,
+            caseNumber: c.case_number,
+            beneficiaryId: c.beneficiary_id,
+            beneficiary: c.beneficiaries ? {
+              id: c.beneficiaries.id,
+              name: c.beneficiaries.name,
+              phone: c.beneficiaries.phone,
+              householdSize: c.beneficiaries.household_size || 1,
+              address: c.beneficiaries.address,
+              district: c.beneficiaries.district,
+              vulnerabilities: c.beneficiaries.vulnerabilities || [],
+              registeredAt: new Date(c.beneficiaries.created_at),
+              optInSms: c.beneficiaries.opt_in_sms,
+              optInEmail: c.beneficiaries.opt_in_email,
+              cases: [],
+              totalAidReceived: c.beneficiaries.total_aid_received || 0
+            } : undefined,
+            category: c.category,
+            priority: c.priority,
+            status: c.status,
+            description: c.description,
+            location: {
+              address: c.address,
+              district: c.district,
+              latitude: c.latitude,
+              longitude: c.longitude
+            },
+            createdAt: new Date(c.created_at),
+            updatedAt: new Date(c.updated_at || c.created_at),
+            slaDeadline: c.sla_deadline ? new Date(c.sla_deadline) : new Date(Date.now() + 24 * 60 * 60 * 1000),
+            notes: [],
+            statusHistory: []
+          }));
+          setAssignedCases(mappedCases);
+        }
+      } else {
+        setVolunteer(fallbackVolunteer);
+        setAssignedCases(fallbackAssignedCases);
+      }
+    } catch (err) {
+      console.error('Error fetching volunteer data:', err);
+      setVolunteer(fallbackVolunteer);
+      setAssignedCases(fallbackAssignedCases);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchVolunteerData();
+  };
+
+  const displayVolunteer = volunteer || fallbackVolunteer;
+  const displayCases = assignedCases.length > 0 ? assignedCases : fallbackAssignedCases;
 
   const formatTimeRemaining = (deadline: Date) => {
     const now = new Date();
@@ -158,29 +290,29 @@ export function VolunteerDashboardPage() {
             <div className="bg-gradient-to-r from-cyan-600/30 to-purple-600/30 p-6">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center text-2xl font-bold">
-                  {volunteer.name.split(' ').map(n => n[0]).join('')}
+                  {displayVolunteername.split(' ').map(n => n[0]).join('')}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold">{volunteer.name}</h2>
-                    {volunteer.isVerified && (
+                    <h2 className="text-xl font-bold">{displayVolunteername}</h2>
+                    {displayVolunteerisVerified && (
                       <CheckCircle className="h-5 w-5 text-cyan-400" />
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{volunteer.role.replace('_', ' ')}</p>
+                  <p className="text-sm text-muted-foreground">{displayVolunteerrole.replace('_', ' ')}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                      {volunteer.status}
+                      {displayVolunteerstatus}
                     </Badge>
                     <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                      {volunteer.district}
+                      {displayVolunteerdistrict}
                     </Badge>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="flex items-center gap-1 text-yellow-400">
                     <Star className="h-5 w-5 fill-current" />
-                    <span className="text-xl font-bold">{volunteer.rating}</span>
+                    <span className="text-xl font-bold">{displayVolunteerrating}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Rating</p>
                 </div>
@@ -194,25 +326,25 @@ export function VolunteerDashboardPage() {
           <MetricCard
             icon={<ClipboardList className="h-5 w-5" />}
             label="Cases Handled"
-            value={volunteer.slaMetrics.totalCasesHandled}
+            value={displayVolunteerslaMetrics.totalCasesHandled}
             color="cyan"
           />
           <MetricCard
             icon={<Target className="h-5 w-5" />}
             label="SLA Compliance"
-            value={`${volunteer.slaMetrics.slaComplianceRate}%`}
+            value={`${displayVolunteerslaMetrics.slaComplianceRate}%`}
             color="green"
           />
           <MetricCard
             icon={<Zap className="h-5 w-5" />}
             label="Avg Response"
-            value={`${volunteer.slaMetrics.averageResponseTime}m`}
+            value={`${displayVolunteerslaMetrics.averageResponseTime}m`}
             color="yellow"
           />
           <MetricCard
             icon={<Timer className="h-5 w-5" />}
             label="Avg Resolution"
-            value={`${volunteer.slaMetrics.averageResolutionTime}h`}
+            value={`${displayVolunteerslaMetrics.averageResolutionTime}h`}
             color="purple"
           />
         </div>
@@ -227,7 +359,7 @@ export function VolunteerDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {volunteer.badges.map(badge => (
+              {displayVolunteerbadges.map(badge => (
                 <div
                   key={badge.id}
                   className="flex-shrink-0 p-3 rounded-xl bg-white/5 border border-white/10 text-center min-w-[100px]"
@@ -244,15 +376,15 @@ export function VolunteerDashboardPage() {
         <Tabs defaultValue="assigned" className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 bg-white/5">
             <TabsTrigger value="assigned">
-              Assigned ({assignedCases.length})
+              Assigned ({displayCases.length})
             </TabsTrigger>
             <TabsTrigger value="completed">
-              Completed ({volunteer.completedCases})
+              Completed ({displayVolunteercompletedCases})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="assigned" className="space-y-4">
-            {assignedCases.length === 0 ? (
+            {displayCases.length === 0 ? (
               <Card className="glass-card border-white/10">
                 <CardContent className="p-8 text-center">
                   <CheckCircle className="h-12 w-12 mx-auto text-green-400 mb-4" />
@@ -263,7 +395,7 @@ export function VolunteerDashboardPage() {
                 </CardContent>
               </Card>
             ) : (
-              assignedCases.map((caseItem, index) => {
+              displayCases.map((caseItem, index) => {
                 const statusConfig = CASE_STATUSES.find(s => s.id === caseItem.status);
                 const priorityConfig = CASE_PRIORITIES.find(p => p.id === caseItem.priority);
                 const categoryConfig = AID_CATEGORIES.find(c => c.id === caseItem.category);
@@ -365,10 +497,10 @@ export function VolunteerDashboardPage() {
             <Card className="glass-card border-white/10">
               <CardContent className="p-6 text-center">
                 <TrendingUp className="h-12 w-12 mx-auto text-green-400 mb-4" />
-                <p className="text-2xl font-bold">{volunteer.completedCases}</p>
+                <p className="text-2xl font-bold">{displayVolunteercompletedCases}</p>
                 <p className="text-muted-foreground">Cases Completed</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {volunteer.slaMetrics.casesResolvedOnTime} resolved within SLA
+                  {displayVolunteerslaMetrics.casesResolvedOnTime} resolved within SLA
                 </p>
               </CardContent>
             </Card>
@@ -387,26 +519,26 @@ export function VolunteerDashboardPage() {
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span>SLA Compliance</span>
-                <span className="text-green-400">{volunteer.slaMetrics.slaComplianceRate}%</span>
+                <span className="text-green-400">{displayVolunteerslaMetrics.slaComplianceRate}%</span>
               </div>
-              <Progress value={volunteer.slaMetrics.slaComplianceRate} className="h-2" />
+              <Progress value={displayVolunteerslaMetrics.slaComplianceRate} className="h-2" />
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span>Customer Satisfaction</span>
-                <span className="text-yellow-400">{volunteer.slaMetrics.customerSatisfactionScore}/5</span>
+                <span className="text-yellow-400">{displayVolunteerslaMetrics.customerSatisfactionScore}/5</span>
               </div>
-              <Progress value={(volunteer.slaMetrics.customerSatisfactionScore / 5) * 100} className="h-2" />
+              <Progress value={(displayVolunteerslaMetrics.customerSatisfactionScore / 5) * 100} className="h-2" />
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span>On-Time Resolution</span>
                 <span className="text-cyan-400">
-                  {Math.round((volunteer.slaMetrics.casesResolvedOnTime / volunteer.slaMetrics.totalCasesHandled) * 100)}%
+                  {Math.round((displayVolunteerslaMetrics.casesResolvedOnTime / displayVolunteerslaMetrics.totalCasesHandled) * 100)}%
                 </span>
               </div>
               <Progress 
-                value={(volunteer.slaMetrics.casesResolvedOnTime / volunteer.slaMetrics.totalCasesHandled) * 100} 
+                value={(displayVolunteerslaMetrics.casesResolvedOnTime / displayVolunteerslaMetrics.totalCasesHandled) * 100} 
                 className="h-2" 
               />
             </div>
