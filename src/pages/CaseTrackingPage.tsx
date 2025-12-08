@@ -21,8 +21,8 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-// Mock case for tracking
-const mockTrackedCase: Case = {
+// Fallback case for tracking
+const fallbackTrackedCase: Case = {
   id: '1',
   caseNumber: 'SOS-20241208-0001',
   beneficiaryId: '1',
@@ -128,7 +128,7 @@ export function CaseTrackingPage() {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (caseNumber.toUpperCase() === 'SOS-20241208-0001' || caseNumber === '0001') {
-      setTrackedCase(mockTrackedCase);
+      setTrackedCase(fallbackTrackedCase);
     } else {
       setError('Case not found. Please check the case number and try again.');
       setTrackedCase(null);

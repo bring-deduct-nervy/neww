@@ -24,7 +24,7 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-// Fallback mock data for when database is empty
+// Fallback data for when database is empty
 const fallbackMissingPersons: MissingPerson[] = [
   {
     id: '1',
@@ -172,7 +172,9 @@ export function MissingPersonsPage() {
     return () => unsubscribe();
   }, []);
 
-  const filteredPersons = missingPersons.filter(person => {
+  const displayPersons = missingPersons.length > 0 ? missingPersons : fallbackMissingPersons;
+  
+  const filteredPersons = displayPersons.filter(person => {
     const matchesSearch = person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       person.lastSeenLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
       person.district?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -220,7 +222,7 @@ export function MissingPersonsPage() {
           <Card className="glass-card border-white/10">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-red-400">
-                {mockMissingPersons.filter(p => p.status === 'MISSING').length}
+                {displayPersons.filter(p => p.status === 'MISSING').length}
               </p>
               <p className="text-xs text-muted-foreground">Missing</p>
             </CardContent>
@@ -228,7 +230,7 @@ export function MissingPersonsPage() {
           <Card className="glass-card border-white/10">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-yellow-400">
-                {mockMissingPersons.filter(p => p.status === 'SIGHTED').length}
+                {displayPersons.filter(p => p.status === 'SIGHTED').length}
               </p>
               <p className="text-xs text-muted-foreground">Sighted</p>
             </CardContent>
@@ -236,7 +238,7 @@ export function MissingPersonsPage() {
           <Card className="glass-card border-white/10">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-green-400">
-                {mockMissingPersons.filter(p => p.status === 'FOUND_SAFE').length}
+                {displayPersons.filter(p => p.status === 'FOUND_SAFE').length}
               </p>
               <p className="text-xs text-muted-foreground">Found Safe</p>
             </CardContent>

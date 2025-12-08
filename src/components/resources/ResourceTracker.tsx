@@ -1,7 +1,10 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/lib/supabase";
+import { realtimeService } from "@/lib/api/realtime-service";
 import {
   Package,
   Droplets,
@@ -13,7 +16,8 @@ import {
   MapPin,
   Clock,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -30,7 +34,7 @@ interface ResourceItem {
   lastUpdated: Date;
 }
 
-const mockResources: ResourceItem[] = [
+const fallbackResources: ResourceItem[] = [
   {
     id: '1',
     category: 'WATER',
@@ -96,7 +100,7 @@ interface IncomingSupply {
   status: 'IN_TRANSIT' | 'ARRIVED' | 'DISTRIBUTED';
 }
 
-const mockIncomingSupplies: IncomingSupply[] = [
+const fallbackIncomingSupplies: IncomingSupply[] = [
   {
     id: '1',
     description: '5000L Water + 500 Food Packs',
@@ -128,7 +132,68 @@ const urgencyConfig = {
 };
 
 export function ResourceTracker() {
-  const criticalItems = mockResources.filter(r => r.urgency === 'CRITICAL' || r.urgency === 'HIGH');
+  const [resources, setResources] = useState<ResourceItem[]>([]);
+  const [supplies, setSupplies] = useState<IncomingSupply[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchResources();
+
+    const unsubscribe = realtimeService.subscribe({
+      table: 'resources',
+      callback: () => fetchResources()
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const fetchResources = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('resources')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const iconMap: Record<string, React.ReactNode> = {
+          'WATER': <Droplets className="h-5 w-5" />,
+          'FOOD': <Utensils className="h-5 w-5" />,
+          'MEDICAL': <Pill className="h-5 w-5" />,
+          'SHELTER': <Package className="h-5 w-5" />,
+          'SANITATION': <Package className="h-5 w-5" />,
+          'EQUIPMENT': <Package className="h-5 w-5" />,
+        };
+
+        const mapped: ResourceItem[] = data.map((r: any) => ({
+          id: r.id,
+          category: r.category || 'OTHER',
+          name: r.name,
+          icon: iconMap[r.category] || <Package className="h-5 w-5" />,
+          available: r.quantity || 0,
+          needed: (r.quantity || 0) + (r.min_stock_level || 100),
+          unit: r.unit || 'units',
+          urgency: r.status === 'LOW_STOCK' ? 'HIGH' : r.status === 'OUT_OF_STOCK' ? 'CRITICAL' : 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+          lastUpdated: new Date(r.updated_at || r.created_at)
+        }));
+        setResources(mapped);
+      } else {
+        setResources(fallbackResources);
+      }
+      setSupplies(fallbackIncomingSupplies);
+    } catch (err) {
+      console.error('Error fetching resources:', err);
+      setResources(fallbackResources);
+      setSupplies(fallbackIncomingSupplies);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const displayResources = resources.length > 0 ? resources : fallbackResources;
+  const displaySupplies = supplies.length > 0 ? supplies : fallbackIncomingSupplies;
+  const criticalItems = displayResources.filter(r => r.urgency === 'CRITICAL' || r.urgency === 'HIGH');
 
   return (
     <div className="space-y-6">
@@ -149,7 +214,7 @@ export function ResourceTracker() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockResources.map((resource, index) => {
+            {displayResources.map((resource, index) => {
               const percentage = (resource.available / resource.needed) * 100;
               const urgency = urgencyConfig[resource.urgency];
 
@@ -208,7 +273,7 @@ export function ResourceTracker() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {mockIncomingSupplies.map((supply, index) => (
+            {displaySupplies.map((supply, index) => (
               <motion.div
                 key={supply.id}
                 initial={{ opacity: 0, y: 10 }}

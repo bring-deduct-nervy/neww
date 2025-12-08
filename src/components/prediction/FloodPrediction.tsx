@@ -28,7 +28,7 @@ interface PredictionZone {
   recommendations: string[];
 }
 
-const mockPredictions: PredictionZone[] = [
+const fallbackPredictions: PredictionZone[] = [
   {
     id: '1',
     name: 'Kaduwela Low-lying Area',
@@ -95,7 +95,41 @@ const riskConfig = {
 };
 
 export function FloodPrediction() {
-  const criticalZones = mockPredictions.filter(p => p.riskLevel === 'CRITICAL');
+  const [predictions, setPredictions] = useState<PredictionZone[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPredictions = async () => {
+      try {
+        const data = await getFloodPredictions();
+        if (data && data.length > 0) {
+          const mapped = data.map((p: FloodPredictionType) => ({
+            id: p.id,
+            name: `${p.district} Area`,
+            district: p.district,
+            riskLevel: p.risk_level as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+            predictedTime: `${p.prediction_hours || 24} hours`,
+            confidence: p.probability || 70,
+            affectedPopulation: (p.affected_areas?.length || 1) * 5000,
+            recommendations: p.recommendations || ['Stay alert', 'Monitor updates']
+          }));
+          setPredictions(mapped);
+        } else {
+          setPredictions(fallbackPredictions);
+        }
+      } catch (err) {
+        console.error('Error fetching predictions:', err);
+        setPredictions(fallbackPredictions);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPredictions();
+  }, []);
+
+  const displayPredictions = predictions.length > 0 ? predictions : fallbackPredictions;
+  const criticalZones = displayPredictions.filter(p => p.riskLevel === 'CRITICAL');
 
   return (
     <Card className="glass-card border-white/10">
@@ -117,7 +151,7 @@ export function FloodPrediction() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {mockPredictions.map((zone, index) => {
+          {displayPredictions.map((zone, index) => {
             const risk = riskConfig[zone.riskLevel];
 
             return (

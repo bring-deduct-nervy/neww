@@ -51,6 +51,11 @@ export function LandingPage() {
             <span className="font-bold text-xl gradient-text">ResQ-Unified</span>
           </Link>
           <div className="flex items-center gap-3">
+            <Link to="/setup">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-white">
+                Setup
+              </Button>
+            </Link>
             <Link to="/auth/signin">
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-white">
                 <LogIn className="h-4 w-4 mr-2" />

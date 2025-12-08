@@ -44,7 +44,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = async (userId: string) => {
     try {
-      const userProfile = await getUserProfile(userId);
+      // Get the current session to access user email
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserEmail = session?.user?.email;
+      
+      // First try to get profile by user_id
+      let userProfile = await getUserProfile(userId);
+      
+      // If no profile found, try to get by email and link it
+      if (!userProfile && currentUserEmail) {
+        const { data: profileByEmail } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('email', currentUserEmail)
+          .single();
+        
+        if (profileByEmail) {
+          // Link the profile to this auth user
+          const { data: updatedProfile } = await supabase
+            .from('user_profiles')
+            .update({ user_id: userId })
+            .eq('email', currentUserEmail)
+            .select()
+            .single();
+          
+          userProfile = updatedProfile;
+        } else {
+          // Create a new profile for this user
+          const demoRoles: Record<string, UserRole> = {
+            'admin@resq-unified.lk': 'SUPER_ADMIN',
+            'coordinator@resq-unified.lk': 'COORDINATOR',
+            'casemanager@resq-unified.lk': 'CASE_MANAGER',
+            'volunteer@resq-unified.lk': 'VOLUNTEER',
+          };
+          
+          const { data: newProfile } = await supabase
+            .from('user_profiles')
+            .insert({
+              user_id: userId,
+              email: currentUserEmail,
+              full_name: session?.user?.user_metadata?.full_name || currentUserEmail.split('@')[0],
+              role: demoRoles[currentUserEmail] || 'USER',
+              is_active: true
+            })
+            .select()
+            .single();
+          
+          userProfile = newProfile;
+        }
+      }
+      
       setProfile(userProfile);
     } catch (err) {
       console.error('Error loading profile:', err);

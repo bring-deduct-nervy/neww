@@ -30,11 +30,13 @@ import { AnalyticsPage } from "@/pages/AnalyticsPage";
 import { ResourceManagementPage } from "@/pages/ResourceManagementPage";
 import { LandingPage } from "@/pages/LandingPage";
 import { AuthPage } from "@/pages/AuthPage";
+import { SetupPage } from "@/pages/SetupPage";
 import { supabase } from "@/lib/supabase";
+import { UserRole } from "@/lib/auth";
 
 // Protected Route Component
-function ProtectedRoute({ children, requiredRole }: { children: React.ReactNode; requiredRole?: string }) {
-  const { isAuthenticated, isLoading, hasRole } = useAuth();
+function ProtectedRoute({ children, requiredRole }: { children: React.ReactNode; requiredRole?: UserRole }) {
+  const { isAuthenticated, isLoading, hasRole, profile } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -49,17 +51,50 @@ function ProtectedRoute({ children, requiredRole }: { children: React.ReactNode;
     return <Navigate to="/auth/signin" state={{ from: location }} replace />;
   }
 
-  if (requiredRole && !hasRole(requiredRole as any)) {
+  if (requiredRole && !hasRole(requiredRole)) {
     return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
 }
 
+// Role-based dashboard redirect
+function RoleBasedDashboard() {
+  const { profile, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-cyan-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // Redirect based on role
+  if (profile) {
+    switch (profile.role) {
+      case 'SUPER_ADMIN':
+      case 'ADMIN':
+        return <AdminDashboardPage />;
+      case 'COORDINATOR':
+        return <AdminDashboardPage />;
+      case 'CASE_MANAGER':
+        return <CaseManagementPage />;
+      case 'VOLUNTEER':
+        return <VolunteerDashboardPage />;
+      default:
+        return <Dashboard />;
+    }
+  }
+  
+  return <Dashboard />;
+}
+
 function AppContent() {
   const location = useLocation();
+  const { profile, isAuthenticated } = useAuth();
   const [alertCount, setAlertCount] = useState(0);
-  const isLandingOrAuth = location.pathname === '/landing' || location.pathname.startsWith('/auth');
+  const isLandingOrAuth = location.pathname === '/landing' || location.pathname.startsWith('/auth') || location.pathname === '/setup';
 
   // Fetch active alerts count
   useEffect(() => {
@@ -92,6 +127,7 @@ function AppContent() {
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/auth/signin" element={<AuthPage mode="signin" />} />
         <Route path="/auth/signup" element={<AuthPage mode="signup" />} />
+        <Route path="/setup" element={<SetupPage />} />
       </Routes>
     );
   }
@@ -103,7 +139,8 @@ function AppContent() {
       <main className="pb-20">
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={isAuthenticated ? <RoleBasedDashboard /> : <Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/weather" element={<WeatherPage />} />
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/shelters" element={<SheltersPage />} />
@@ -126,9 +163,11 @@ function AppContent() {
           
           {/* Case Manager Routes */}
           <Route path="/cases" element={<ProtectedRoute requiredRole="CASE_MANAGER"><CaseManagementPage /></ProtectedRoute>} />
+          <Route path="/beneficiaries" element={<ProtectedRoute requiredRole="CASE_MANAGER"><BeneficiaryRegistrationPage /></ProtectedRoute>} />
           
           {/* Coordinator Routes */}
           <Route path="/broadcast" element={<ProtectedRoute requiredRole="COORDINATOR"><BroadcastPage /></ProtectedRoute>} />
+          <Route path="/resources" element={<ProtectedRoute requiredRole="COORDINATOR"><ResourceManagementPage /></ProtectedRoute>} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<ProtectedRoute requiredRole="ADMIN"><AdminDashboardPage /></ProtectedRoute>} />
@@ -136,7 +175,6 @@ function AppContent() {
           <Route path="/admin/users" element={<ProtectedRoute requiredRole="ADMIN"><UserManagementPage /></ProtectedRoute>} />
           <Route path="/admin/import" element={<ProtectedRoute requiredRole="ADMIN"><DataImportPage /></ProtectedRoute>} />
           <Route path="/admin/analytics" element={<ProtectedRoute requiredRole="ADMIN"><AnalyticsPage /></ProtectedRoute>} />
-          <Route path="/resources" element={<ProtectedRoute requiredRole="ADMIN"><ResourceManagementPage /></ProtectedRoute>} />
         </Routes>
       </main>
       <MobileNav />

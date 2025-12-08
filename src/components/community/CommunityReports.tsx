@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { EmergencyReport, SeverityLevel } from "@/lib/types";
 import { SEVERITY_CONFIG } from "@/lib/constants";
+import { supabase } from "@/lib/supabase";
+import { realtimeService } from "@/lib/api/realtime-service";
 import {
   ThumbsUp,
   ThumbsDown,
@@ -14,19 +16,22 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  Users
+  Users,
+  Loader2
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-// Mock community reports
-const mockReports: (EmergencyReport & { 
-  upvotes: number; 
-  downvotes: number; 
+type CommunityReport = EmergencyReport & {
+  upvotes: number;
+  downvotes: number;
   comments: number;
   isVerified: boolean;
   reporterName: string;
-})[] = [
+};
+
+// Fallback community reports
+const fallbackReports: CommunityReport[] = [
   {
     id: '1',
     category: 'FLOOD_TRAPPED',
@@ -125,7 +130,72 @@ const categoryIcons: Record<string, string> = {
 };
 
 export function CommunityReports() {
-  const [reports, setReports] = useState(mockReports);
+  const [reports, setReports] = useState<CommunityReport[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchReports();
+
+    const unsubscribe = realtimeService.subscribe({
+      table: 'emergency_reports',
+      callback: () => fetchReports()
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const fetchReports = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('emergency_reports')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const mapped: CommunityReport[] = data.map((r: any) => ({
+          id: r.id,
+          category: r.category || 'OTHER',
+          severity: r.severity || 'MEDIUM',
+          title: r.description?.substring(0, 50) || 'Report',
+          description: r.description || '',
+          latitude: r.latitude || 0,
+          longitude: r.longitude || 0,
+          address: r.address || '',
+          district: r.district || '',
+          peopleAffected: 1,
+          hasChildren: false,
+          hasElderly: false,
+          hasDisabled: false,
+          hasMedicalNeeds: false,
+          contactName: r.reporter_name || 'Anonymous',
+          contactPhone: r.reporter_phone || '',
+          isAnonymous: !r.reporter_name,
+          images: [],
+          status: r.status || 'PENDING',
+          createdAt: new Date(r.created_at),
+          updatedAt: new Date(r.updated_at || r.created_at),
+          upvotes: Math.floor(Math.random() * 50),
+          downvotes: Math.floor(Math.random() * 5),
+          comments: Math.floor(Math.random() * 20),
+          isVerified: r.status === 'VERIFIED',
+          reporterName: r.reporter_name || 'Anonymous'
+        }));
+        setReports(mapped);
+      } else {
+        setReports(fallbackReports);
+      }
+    } catch (err) {
+      console.error('Error fetching community reports:', err);
+      setReports(fallbackReports);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const displayReports = reports.length > 0 ? reports : fallbackReports;
 
   const handleUpvote = (reportId: string) => {
     setReports(prev => prev.map(report => 

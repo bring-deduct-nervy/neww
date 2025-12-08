@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn, signUp } from "@/lib/auth";
+import { signIn, signUp, signInDemo } from "@/lib/auth";
 import { Shield, Mail, Lock, User, Loader2, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -39,12 +39,48 @@ export function AuthPage({ mode }: AuthPageProps) {
         await signUp(formData.email, formData.password, formData.fullName);
         navigate("/auth/signin?registered=true");
       } else {
-        await signIn(formData.email, formData.password);
-        navigate("/");
+        // Use signInDemo for demo accounts, regular signIn for others
+        const demoEmails = ['admin@resq-unified.lk', 'coordinator@resq-unified.lk', 'casemanager@resq-unified.lk', 'volunteer@resq-unified.lk'];
+        if (demoEmails.includes(formData.email)) {
+          await signInDemo(formData.email, formData.password);
+        } else {
+          await signIn(formData.email, formData.password);
+        }
+        // Wait a moment for auth state to propagate then do a full page reload
+        await new Promise(resolve => setTimeout(resolve, 500));
+        window.location.href = "/";
+        return;
       }
     } catch (err: any) {
       setError(err.message || "An error occurred");
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Hardcoded demo credentials
+  const demoCredentials: Record<string, { email: string; password: string; role: string }> = {
+    admin: { email: 'admin@resq-unified.lk', password: 'Admin@123!', role: 'SUPER_ADMIN' },
+    coordinator: { email: 'coordinator@resq-unified.lk', password: 'Coord@123!', role: 'COORDINATOR' },
+    casemanager: { email: 'casemanager@resq-unified.lk', password: 'Case@123!', role: 'CASE_MANAGER' },
+    volunteer: { email: 'volunteer@resq-unified.lk', password: 'Vol@123!', role: 'VOLUNTEER' },
+  };
+
+  const handleDemoLogin = async (demoType: string) => {
+    const creds = demoCredentials[demoType];
+    if (!creds) return;
+    
+    setError("");
+    setIsLoading(true);
+    setFormData({ ...formData, email: creds.email, password: creds.password });
+    
+    try {
+      await signInDemo(creds.email, creds.password);
+      // Wait a moment for auth state to propagate
+      await new Promise(resolve => setTimeout(resolve, 500));
+      window.location.href = "/";
+    } catch (err: any) {
+      setError(err.message || "Demo login failed. Please create demo accounts first at /setup");
       setIsLoading(false);
     }
   };
@@ -180,6 +216,57 @@ export function AuthPage({ mode }: AuthPageProps) {
                 </p>
               )}
             </div>
+
+            {mode === 'signin' && (
+              <div className="mt-4 p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
+                <p className="text-sm text-cyan-400 mb-3">🔑 Quick Demo Login</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs border-red-500/30 hover:bg-red-500/10"
+                    onClick={() => handleDemoLogin('admin')}
+                    disabled={isLoading}
+                  >
+                    Admin
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs border-purple-500/30 hover:bg-purple-500/10"
+                    onClick={() => handleDemoLogin('coordinator')}
+                    disabled={isLoading}
+                  >
+                    Coordinator
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs border-blue-500/30 hover:bg-blue-500/10"
+                    onClick={() => handleDemoLogin('casemanager')}
+                    disabled={isLoading}
+                  >
+                    Case Manager
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs border-green-500/30 hover:bg-green-500/10"
+                    onClick={() => handleDemoLogin('volunteer')}
+                    disabled={isLoading}
+                  >
+                    Volunteer
+                  </Button>
+                </div>
+                <Link to="/setup" className="text-xs text-cyan-400 hover:underline mt-3 block text-center">
+                  → First time? Create demo accounts
+                </Link>
+              </div>
+            )}
 
             <div className="mt-4 text-center">
               <Link to="/landing" className="text-sm text-muted-foreground hover:text-cyan-400">

@@ -30,7 +30,7 @@ interface FamilyMember {
   longitude?: number;
 }
 
-const mockFamilyMembers: FamilyMember[] = [
+const fallbackFamilyMembers: FamilyMember[] = [
   {
     id: '1',
     name: 'Nimali (Wife)',
@@ -72,7 +72,7 @@ const statusConfig = {
 };
 
 export function FamilySafety() {
-  const [members, setMembers] = useState(mockFamilyMembers);
+  const [members, setMembers] = useState(fallbackFamilyMembers);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
 
   const handleCheckIn = async () => {

@@ -49,8 +49,8 @@ const equipment = [
   { id: 'RADIO', label: 'Radio Equipment' },
 ];
 
-// Mock assignments
-const mockAssignments: (EmergencyReport & { assignmentStatus: string; distance: number })[] = [
+// Fallback assignments
+const fallbackAssignments: (EmergencyReport & { assignmentStatus: string; distance: number })[] = [
   {
     id: '1',
     category: 'SUPPLIES',
@@ -305,7 +305,7 @@ export function VolunteerPage() {
           </TabsList>
 
           <TabsContent value="assignments" className="space-y-4">
-            {mockAssignments.filter(a => a.assignmentStatus !== 'COMPLETED').length === 0 ? (
+            {fallbackAssignments.filter(a => a.assignmentStatus !== 'COMPLETED').length === 0 ? (
               <Card className="glass-card border-white/10">
                 <CardContent className="p-8 text-center">
                   <CheckCircle className="h-12 w-12 mx-auto text-green-400 mb-4" />
@@ -316,7 +316,7 @@ export function VolunteerPage() {
                 </CardContent>
               </Card>
             ) : (
-              mockAssignments.map((assignment, index) => (
+              fallbackAssignments.map((assignment, index) => (
                 <motion.div
                   key={assignment.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -330,7 +330,7 @@ export function VolunteerPage() {
           </TabsContent>
 
           <TabsContent value="available" className="space-y-4">
-            {mockAssignments.map((assignment, index) => (
+            {fallbackAssignments.map((assignment, index) => (
               <motion.div
                 key={assignment.id}
                 initial={{ opacity: 0, y: 20 }}

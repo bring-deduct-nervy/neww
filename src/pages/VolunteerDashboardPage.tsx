@@ -63,7 +63,7 @@ const fallbackVolunteer: Volunteer = {
   ]
 };
 
-// Mock assigned cases
+// Fallback assigned cases
 const fallbackAssignedCases: Case[] = [
   {
     id: '1',
@@ -290,29 +290,29 @@ export function VolunteerDashboardPage() {
             <div className="bg-gradient-to-r from-cyan-600/30 to-purple-600/30 p-6">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center text-2xl font-bold">
-                  {displayVolunteername.split(' ').map(n => n[0]).join('')}
+                  {displayVolunteer.name.split(' ').map(n => n[0]).join('')}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold">{displayVolunteername}</h2>
-                    {displayVolunteerisVerified && (
+                    <h2 className="text-xl font-bold">{displayVolunteer.name}</h2>
+                    {displayVolunteer.isVerified && (
                       <CheckCircle className="h-5 w-5 text-cyan-400" />
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{displayVolunteerrole.replace('_', ' ')}</p>
+                  <p className="text-sm text-muted-foreground">{displayVolunteer.role.replace('_', ' ')}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                      {displayVolunteerstatus}
+                      {displayVolunteer.status}
                     </Badge>
                     <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                      {displayVolunteerdistrict}
+                      {displayVolunteer.district}
                     </Badge>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="flex items-center gap-1 text-yellow-400">
                     <Star className="h-5 w-5 fill-current" />
-                    <span className="text-xl font-bold">{displayVolunteerrating}</span>
+                    <span className="text-xl font-bold">{displayVolunteer.rating}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Rating</p>
                 </div>
@@ -326,25 +326,25 @@ export function VolunteerDashboardPage() {
           <MetricCard
             icon={<ClipboardList className="h-5 w-5" />}
             label="Cases Handled"
-            value={displayVolunteerslaMetrics.totalCasesHandled}
+            value={displayVolunteer.slaMetrics.totalCasesHandled}
             color="cyan"
           />
           <MetricCard
             icon={<Target className="h-5 w-5" />}
             label="SLA Compliance"
-            value={`${displayVolunteerslaMetrics.slaComplianceRate}%`}
+            value={`${displayVolunteer.slaMetrics.slaComplianceRate}%`}
             color="green"
           />
           <MetricCard
             icon={<Zap className="h-5 w-5" />}
             label="Avg Response"
-            value={`${displayVolunteerslaMetrics.averageResponseTime}m`}
+            value={`${displayVolunteer.slaMetrics.averageResponseTime}m`}
             color="yellow"
           />
           <MetricCard
             icon={<Timer className="h-5 w-5" />}
             label="Avg Resolution"
-            value={`${displayVolunteerslaMetrics.averageResolutionTime}h`}
+            value={`${displayVolunteer.slaMetrics.averageResolutionTime}h`}
             color="purple"
           />
         </div>
@@ -359,7 +359,7 @@ export function VolunteerDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {displayVolunteerbadges.map(badge => (
+              {displayVolunteer.badges.map(badge => (
                 <div
                   key={badge.id}
                   className="flex-shrink-0 p-3 rounded-xl bg-white/5 border border-white/10 text-center min-w-[100px]"
@@ -379,7 +379,7 @@ export function VolunteerDashboardPage() {
               Assigned ({displayCases.length})
             </TabsTrigger>
             <TabsTrigger value="completed">
-              Completed ({displayVolunteercompletedCases})
+              Completed ({displayVolunteer.completedCases})
             </TabsTrigger>
           </TabsList>
 
@@ -497,10 +497,10 @@ export function VolunteerDashboardPage() {
             <Card className="glass-card border-white/10">
               <CardContent className="p-6 text-center">
                 <TrendingUp className="h-12 w-12 mx-auto text-green-400 mb-4" />
-                <p className="text-2xl font-bold">{displayVolunteercompletedCases}</p>
+                <p className="text-2xl font-bold">{displayVolunteer.completedCases}</p>
                 <p className="text-muted-foreground">Cases Completed</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {displayVolunteerslaMetrics.casesResolvedOnTime} resolved within SLA
+                  {displayVolunteer.slaMetrics.casesResolvedOnTime} resolved within SLA
                 </p>
               </CardContent>
             </Card>
@@ -519,26 +519,26 @@ export function VolunteerDashboardPage() {
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span>SLA Compliance</span>
-                <span className="text-green-400">{displayVolunteerslaMetrics.slaComplianceRate}%</span>
+                <span className="text-green-400">{displayVolunteer.slaMetrics.slaComplianceRate}%</span>
               </div>
-              <Progress value={displayVolunteerslaMetrics.slaComplianceRate} className="h-2" />
+              <Progress value={displayVolunteer.slaMetrics.slaComplianceRate} className="h-2" />
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span>Customer Satisfaction</span>
-                <span className="text-yellow-400">{displayVolunteerslaMetrics.customerSatisfactionScore}/5</span>
+                <span className="text-yellow-400">{displayVolunteer.slaMetrics.customerSatisfactionScore}/5</span>
               </div>
-              <Progress value={(displayVolunteerslaMetrics.customerSatisfactionScore / 5) * 100} className="h-2" />
+              <Progress value={(displayVolunteer.slaMetrics.customerSatisfactionScore / 5) * 100} className="h-2" />
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span>On-Time Resolution</span>
                 <span className="text-cyan-400">
-                  {Math.round((displayVolunteerslaMetrics.casesResolvedOnTime / displayVolunteerslaMetrics.totalCasesHandled) * 100)}%
+                  {Math.round((displayVolunteer.slaMetrics.casesResolvedOnTime / displayVolunteer.slaMetrics.totalCasesHandled) * 100)}%
                 </span>
               </div>
               <Progress 
-                value={(displayVolunteerslaMetrics.casesResolvedOnTime / displayVolunteerslaMetrics.totalCasesHandled) * 100} 
+                value={(displayVolunteer.slaMetrics.casesResolvedOnTime / displayVolunteer.slaMetrics.totalCasesHandled) * 100} 
                 className="h-2" 
               />
             </div>
