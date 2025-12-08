@@ -1,12 +1,15 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiverLevel, RiverStatus } from "@/lib/types";
-import { Waves, TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { realtimeService } from "@/lib/api/realtime-service";
+import { Waves, TrendingUp, TrendingDown, Minus, AlertTriangle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-// Mock river level data for Sri Lanka
-const mockRiverLevels: RiverLevel[] = [
+// Fallback river level data for Sri Lanka
+const fallbackRiverLevels: RiverLevel[] = [
   {
     id: '1',
     riverName: 'Kelani River',
@@ -112,8 +115,59 @@ interface RiverLevelsProps {
 }
 
 export function RiverLevels({ compact = false }: RiverLevelsProps) {
-  const criticalRivers = mockRiverLevels.filter(r => r.status === 'DANGER' || r.status === 'FLOODING');
-  const displayRivers = compact ? mockRiverLevels.slice(0, 3) : mockRiverLevels;
+  const [riverLevels, setRiverLevels] = useState<RiverLevel[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchRiverLevels();
+
+    const unsubscribe = realtimeService.subscribe({
+      table: 'river_levels',
+      callback: () => fetchRiverLevels()
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const fetchRiverLevels = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('river_levels')
+        .select('*')
+        .order('status', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const mapped = data.map((r: any) => ({
+          id: r.id,
+          riverName: r.river_name,
+          stationName: r.station_name,
+          district: r.district,
+          latitude: r.latitude,
+          longitude: r.longitude,
+          currentLevel: r.current_level,
+          warningLevel: r.warning_level,
+          dangerLevel: r.danger_level,
+          status: r.status as RiverStatus,
+          trend: 'STABLE' as const,
+          lastUpdated: new Date(r.recorded_at || r.created_at)
+        }));
+        setRiverLevels(mapped);
+      } else {
+        setRiverLevels(fallbackRiverLevels);
+      }
+    } catch (err) {
+      console.error('Error fetching river levels:', err);
+      setRiverLevels(fallbackRiverLevels);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const displayData = riverLevels.length > 0 ? riverLevels : fallbackRiverLevels;
+  const criticalRivers = displayData.filter(r => r.status === 'DANGER' || r.status === 'FLOODING');
+  const displayRivers = compact ? displayData.slice(0, 3) : displayData;
 
   return (
     <Card className="glass-card border-white/10">
@@ -203,9 +257,9 @@ export function RiverLevels({ compact = false }: RiverLevelsProps) {
           })}
         </div>
 
-        {compact && mockRiverLevels.length > 3 && (
+        {compact && displayData.length > 3 && (
           <button className="w-full mt-3 text-sm text-cyan-400 hover:text-cyan-300">
-            View all {mockRiverLevels.length} monitoring stations →
+            View all {displayData.length} monitoring stations →
           </button>
         )}
       </CardContent>

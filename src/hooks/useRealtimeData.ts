@@ -180,7 +180,7 @@ export function useRealtimeStats() {
       setStats({
         cases: {
           total: cases.data?.length || 0,
-          new: cases.data?.filter(c => c.status === 'NEW').length || 0,
+          new: cases.data?.filter(c => c.status === 'PENDING').length || 0,
           inProgress: cases.data?.filter(c => ['ASSIGNED', 'IN_PROGRESS'].includes(c.status)).length || 0,
           resolved: cases.data?.filter(c => c.status === 'RESOLVED').length || 0
         },

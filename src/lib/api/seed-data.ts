@@ -10,13 +10,12 @@ const SRI_LANKA_DISTRICTS = [
 ];
 
 const CASE_CATEGORIES = [
-  'FOOD_SUPPLIES', 'DRINKING_WATER', 'MEDICAL', 'SHELTER', 'CLOTHING',
-  'WASHING_ITEMS', 'BABY_SUPPLIES', 'ELDERLY_CARE', 'FINANCIAL',
-  'TRANSPORTATION', 'INFORMATION', 'OTHER'
+  'FOOD', 'WATER', 'MEDICAL', 'SHELTER', 'EVACUATION', 'RESCUE', 
+  'CLOTHING', 'SANITATION', 'ELECTRICITY', 'COMMUNICATION', 'TRANSPORT', 'OTHER'
 ];
 
 const PRIORITIES = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
-const STATUSES = ['NEW', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
+const STATUSES = ['PENDING', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
 // Generate random Sri Lankan names
 const firstNames = ['Kamal', 'Nimal', 'Sunil', 'Priya', 'Kumari', 'Lakshmi', 'Ravi', 'Saman', 'Dilani', 'Chaminda', 'Anura', 'Malini', 'Ruwan', 'Sanduni', 'Thilak'];
@@ -217,7 +216,7 @@ export async function seedRiverLevels() {
     let status = 'NORMAL';
     if (currentLevel >= dangerLevel) status = 'DANGER';
     else if (currentLevel >= warningLevel) status = 'WARNING';
-    else if (currentLevel >= warningLevel * 0.8) status = 'ALERT';
+    else if (currentLevel >= warningLevel * 0.8) status = 'RISING';
 
     return {
       river_name: river.name,
@@ -236,6 +235,119 @@ export async function seedRiverLevels() {
   const { data, error } = await supabase
     .from('river_levels')
     .insert(riverLevels)
+    .select();
+
+  if (error) throw error;
+  return data;
+}
+
+// Seed weather data
+export async function seedWeatherData() {
+  const districtCoords: Record<string, { lat: number; lng: number }> = {
+    'Colombo': { lat: 6.9271, lng: 79.8612 },
+    'Gampaha': { lat: 7.0917, lng: 79.9500 },
+    'Kalutara': { lat: 6.5854, lng: 79.9607 },
+    'Kandy': { lat: 7.2906, lng: 80.6337 },
+    'Galle': { lat: 6.0535, lng: 80.2210 },
+    'Matara': { lat: 5.9549, lng: 80.5550 },
+    'Ratnapura': { lat: 6.6828, lng: 80.3992 },
+    'Kurunegala': { lat: 7.4867, lng: 80.3647 },
+    'Anuradhapura': { lat: 8.3114, lng: 80.4037 },
+    'Jaffna': { lat: 9.6615, lng: 80.0255 },
+    'Batticaloa': { lat: 7.7310, lng: 81.6747 },
+    'Trincomalee': { lat: 8.5874, lng: 81.2152 },
+    'Badulla': { lat: 6.9934, lng: 81.0550 },
+    'Nuwara Eliya': { lat: 6.9497, lng: 80.7891 }
+  };
+
+  const weatherData = Object.entries(districtCoords).map(([district, coords]) => {
+    const rainfall = Math.random() * 50;
+    let floodRisk = 'LOW';
+    if (rainfall > 40) floodRisk = 'EXTREME';
+    else if (rainfall > 30) floodRisk = 'VERY_HIGH';
+    else if (rainfall > 20) floodRisk = 'HIGH';
+    else if (rainfall > 10) floodRisk = 'MODERATE';
+
+    return {
+      district,
+      latitude: coords.lat,
+      longitude: coords.lng,
+      temperature: 25 + Math.random() * 10,
+      humidity: 60 + Math.random() * 30,
+      rainfall: Math.round(rainfall * 10) / 10,
+      wind_speed: Math.random() * 30,
+      wind_direction: Math.floor(Math.random() * 360),
+      pressure: 1010 + Math.random() * 20,
+      cloud_cover: Math.floor(Math.random() * 100),
+      visibility: 5 + Math.random() * 10,
+      feels_like: 26 + Math.random() * 8,
+      weather_code: randomElement([0, 1, 2, 3, 45, 51, 61, 63, 65, 80, 95]),
+      flood_risk_level: floodRisk,
+      recorded_at: new Date().toISOString()
+    };
+  });
+
+  const { data, error } = await supabase
+    .from('weather_data')
+    .insert(weatherData)
+    .select();
+
+  if (error) throw error;
+  return data;
+}
+
+// Seed missing persons
+export async function seedMissingPersons(count: number = 10) {
+  const missingPersons = [];
+  
+  for (let i = 0; i < count; i++) {
+    const status = randomElement(['MISSING', 'MISSING', 'MISSING', 'FOUND']);
+    missingPersons.push({
+      name: randomName(),
+      age: Math.floor(Math.random() * 60) + 10,
+      gender: randomElement(['Male', 'Female']),
+      description: `Last seen wearing ${randomElement(['blue shirt', 'red dress', 'white t-shirt', 'green jacket'])}`,
+      last_seen_location: `${randomDistrict()} area`,
+      last_seen_date: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+      district: randomDistrict(),
+      contact_name: randomName(),
+      contact_phone: randomPhone(),
+      status,
+      found_at: status === 'FOUND' ? new Date().toISOString() : null,
+      found_location: status === 'FOUND' ? `${randomDistrict()} shelter` : null
+    });
+  }
+
+  const { data, error } = await supabase
+    .from('missing_persons')
+    .insert(missingPersons)
+    .select();
+
+  if (error) throw error;
+  return data;
+}
+
+// Seed emergency reports
+export async function seedEmergencyReports(count: number = 20) {
+  const categories = ['FLOOD', 'LANDSLIDE', 'FIRE', 'MEDICAL', 'RESCUE', 'OTHER'];
+  const reports = [];
+  
+  for (let i = 0; i < count; i++) {
+    reports.push({
+      reporter_name: randomName(),
+      reporter_phone: randomPhone(),
+      category: randomElement(categories),
+      description: `Emergency situation reported: ${randomElement(['flooding in area', 'people stranded', 'medical assistance needed', 'road blocked', 'building damage'])}`,
+      address: `${Math.floor(Math.random() * 500) + 1}, ${randomDistrict()} Road`,
+      district: randomDistrict(),
+      severity: randomElement(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+      status: randomElement(['PENDING', 'VERIFIED', 'ASSIGNED', 'RESOLVED'])
+    });
+  }
+
+  const { data, error } = await supabase
+    .from('emergency_reports')
+    .insert(reports)
     .select();
 
   if (error) throw error;
@@ -331,6 +443,15 @@ export async function seedAllData() {
     console.log('Seeding river levels...');
     await seedRiverLevels();
     
+    console.log('Seeding weather data...');
+    await seedWeatherData();
+    
+    console.log('Seeding missing persons...');
+    await seedMissingPersons(10);
+    
+    console.log('Seeding emergency reports...');
+    await seedEmergencyReports(20);
+    
     console.log('Seeding donations...');
     await seedDonations(30);
     
@@ -348,12 +469,12 @@ export async function seedAllData() {
 // Clear all data
 export async function clearAllData() {
   const tables = [
-    'case_notes', 'case_status_history', 'aid_items', 'cases',
-    'sightings', 'missing_persons', 'emergency_reports',
+    'case_notes', 'case_attachments', 'aid_items', 'cases',
+    'missing_persons', 'emergency_reports',
     'donations', 'resources', 'river_levels', 'weather_data',
-    'flood_predictions', 'alerts', 'broadcasts', 'sms_logs',
-    'volunteer_badges', 'volunteers', 'beneficiaries', 'shelters',
-    'family_members', 'analytics_events', 'audit_logs'
+    'flood_predictions', 'alerts', 'broadcasts', 'notification_queue',
+    'volunteers', 'beneficiaries', 'shelters',
+    'analytics_events', 'audit_logs'
   ];
 
   for (const table of tables) {

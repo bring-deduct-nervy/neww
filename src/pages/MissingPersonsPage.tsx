@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MissingPerson, MissingStatus } from "@/lib/types";
+import { supabase } from "@/lib/supabase";
+import { realtimeService } from "@/lib/api/realtime-service";
 import {
   Search,
   Plus,
@@ -16,13 +18,14 @@ import {
   User,
   Filter,
   ChevronRight,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-// Mock data
-const mockMissingPersons: MissingPerson[] = [
+// Fallback mock data for when database is empty
+const fallbackMissingPersons: MissingPerson[] = [
   {
     id: '1',
     name: 'Kamal Perera',
@@ -111,8 +114,65 @@ export function MissingPersonsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<MissingStatus | 'ALL'>('ALL');
   const [selectedPerson, setSelectedPerson] = useState<MissingPerson | null>(null);
+  const [missingPersons, setMissingPersons] = useState<MissingPerson[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredPersons = mockMissingPersons.filter(person => {
+  useEffect(() => {
+    const fetchMissingPersons = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('missing_persons')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const mapped = data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            age: p.age,
+            gender: p.gender?.toUpperCase() || 'UNKNOWN',
+            height: '',
+            weight: '',
+            physicalDesc: p.description || '',
+            clothingDesc: '',
+            photo: p.photo_url,
+            lastSeenAt: new Date(p.last_seen_date || p.created_at),
+            lastSeenLocation: p.last_seen_location || 'Unknown',
+            lastSeenLat: p.latitude,
+            lastSeenLng: p.longitude,
+            district: p.district,
+            contactName: p.contact_name,
+            contactPhone: p.contact_phone,
+            status: p.status === 'FOUND' ? 'FOUND_SAFE' : p.status,
+            sightings: [],
+            createdAt: new Date(p.created_at)
+          }));
+          setMissingPersons(mapped);
+        } else {
+          setMissingPersons(fallbackMissingPersons);
+        }
+      } catch (err) {
+        console.error('Error fetching missing persons:', err);
+        setMissingPersons(fallbackMissingPersons);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMissingPersons();
+
+    const unsubscribe = realtimeService.subscribe({
+      table: 'missing_persons',
+      callback: () => fetchMissingPersons()
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const filteredPersons = missingPersons.filter(person => {
     const matchesSearch = person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       person.lastSeenLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
       person.district?.toLowerCase().includes(searchQuery.toLowerCase());

@@ -531,6 +531,77 @@ export function AdminSettingsPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Cloud className="h-5 w-5 text-cyan-400" />
+                  API Service Configuration
+                </CardTitle>
+                <CardDescription>
+                  Choose between free and paid API services
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
+                  <p className="text-sm text-cyan-400 mb-2">💡 Free vs Paid APIs</p>
+                  <p className="text-xs text-muted-foreground">
+                    Free APIs have rate limits but are suitable for most use cases. Paid APIs offer higher limits and additional features.
+                  </p>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                    <div>
+                      <p className="font-medium">Weather API</p>
+                      <p className="text-xs text-muted-foreground">Current: Open-Meteo (Free)</p>
+                    </div>
+                    <select className="h-9 px-3 rounded-md bg-white/5 border border-white/10 text-sm">
+                      <option value="OPEN_METEO">Open-Meteo (Free)</option>
+                      <option value="OPENWEATHERMAP">OpenWeatherMap (Paid)</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                    <div>
+                      <p className="font-medium">Maps API</p>
+                      <p className="text-xs text-muted-foreground">Current: OpenStreetMap (Free)</p>
+                    </div>
+                    <select className="h-9 px-3 rounded-md bg-white/5 border border-white/10 text-sm">
+                      <option value="OPENSTREETMAP">OpenStreetMap (Free)</option>
+                      <option value="GOOGLE_MAPS">Google Maps (Paid)</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                    <div>
+                      <p className="font-medium">SMS Service</p>
+                      <p className="text-xs text-muted-foreground">Current: Twilio (Paid)</p>
+                    </div>
+                    <select className="h-9 px-3 rounded-md bg-white/5 border border-white/10 text-sm">
+                      <option value="TWILIO">Twilio (Paid)</option>
+                      <option value="DISABLED">Disabled</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                    <div>
+                      <p className="font-medium">Geocoding API</p>
+                      <p className="text-xs text-muted-foreground">Current: Nominatim (Free)</p>
+                    </div>
+                    <select className="h-9 px-3 rounded-md bg-white/5 border border-white/10 text-sm">
+                      <option value="NOMINATIM">Nominatim (Free)</option>
+                      <option value="GOOGLE_GEOCODING">Google Geocoding (Paid)</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <Button className="bg-cyan-600 hover:bg-cyan-500">
+                  <Save className="h-4 w-4 mr-2" />
+                  Save API Configuration
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card border-white/10">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Cloud className="h-5 w-5 text-cyan-400" />
                   SLA Configuration
                 </CardTitle>
               </CardHeader>

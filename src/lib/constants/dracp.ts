@@ -1,17 +1,17 @@
-import { AidCategory, CasePriority, CaseStatus, VolunteerSkill, VolunteerRole, Vulnerability } from '@/lib/types/dracp';
+import { CasePriority, CaseStatus, VolunteerSkill, VolunteerRole, Vulnerability, AidCategory } from '@/lib/types/dracp';
 
 export const AID_CATEGORIES: { id: AidCategory; label: string; icon: string; description: string }[] = [
-  { id: 'FOOD_SUPPLIES', label: 'Food Supplies', icon: '🍚', description: 'Rice, dry rations, cooked meals' },
-  { id: 'DRINKING_WATER', label: 'Drinking Water', icon: '💧', description: 'Clean drinking water, water bottles' },
-  { id: 'WASHING_ITEMS', label: 'Washing Items', icon: '🧼', description: 'Soap, detergent, hygiene products' },
+  { id: 'FOOD', label: 'Food Supplies', icon: '🍚', description: 'Rice, dry rations, cooked meals' },
+  { id: 'WATER', label: 'Drinking Water', icon: '💧', description: 'Clean drinking water, water bottles' },
+  { id: 'SANITATION', label: 'Sanitation Items', icon: '🧼', description: 'Soap, detergent, hygiene products' },
   { id: 'CLOTHING', label: 'Clothing', icon: '👕', description: 'Clothes, blankets, bedding' },
   { id: 'SHELTER', label: 'Shelter', icon: '🏠', description: 'Temporary shelter, tarpaulins' },
   { id: 'MEDICAL', label: 'Medical', icon: '💊', description: 'Medicine, first aid, medical attention' },
-  { id: 'BABY_SUPPLIES', label: 'Baby Supplies', icon: '👶', description: 'Formula, diapers, baby food' },
-  { id: 'ELDERLY_CARE', label: 'Elderly Care', icon: '👴', description: 'Special care for elderly' },
-  { id: 'FINANCIAL', label: 'Financial Aid', icon: '💰', description: 'Cash assistance, vouchers' },
-  { id: 'TRANSPORTATION', label: 'Transportation', icon: '🚗', description: 'Evacuation, transport assistance' },
-  { id: 'INFORMATION', label: 'Information', icon: 'ℹ️', description: 'Information and guidance only' },
+  { id: 'EVACUATION', label: 'Evacuation', icon: '🚨', description: 'Emergency evacuation assistance' },
+  { id: 'RESCUE', label: 'Rescue', icon: '🆘', description: 'Search and rescue operations' },
+  { id: 'ELECTRICITY', label: 'Electricity', icon: '⚡', description: 'Power restoration, generators' },
+  { id: 'COMMUNICATION', label: 'Communication', icon: '📱', description: 'Communication assistance' },
+  { id: 'TRANSPORT', label: 'Transportation', icon: '🚗', description: 'Transport assistance' },
   { id: 'OTHER', label: 'Other', icon: '📦', description: 'Other types of assistance' },
 ];
 
@@ -23,15 +23,13 @@ export const CASE_PRIORITIES: { id: CasePriority; label: string; color: string; 
 ];
 
 export const CASE_STATUSES: { id: CaseStatus; label: string; color: string; description: string }[] = [
-  { id: 'NEW', label: 'New', color: 'blue', description: 'Just created, awaiting triage' },
-  { id: 'TRIAGED', label: 'Triaged', color: 'purple', description: 'Assessed and prioritized' },
+  { id: 'PENDING', label: 'Pending', color: 'blue', description: 'Just created, awaiting assignment' },
   { id: 'ASSIGNED', label: 'Assigned', color: 'cyan', description: 'Assigned to volunteer' },
   { id: 'IN_PROGRESS', label: 'In Progress', color: 'yellow', description: 'Being worked on' },
-  { id: 'PENDING_AID', label: 'Pending Aid', color: 'orange', description: 'Waiting for resources' },
-  { id: 'AID_DISPATCHED', label: 'Aid Dispatched', color: 'teal', description: 'Aid sent to beneficiary' },
+  { id: 'ON_HOLD', label: 'On Hold', color: 'orange', description: 'Waiting for resources' },
   { id: 'RESOLVED', label: 'Resolved', color: 'green', description: 'Successfully completed' },
   { id: 'CLOSED', label: 'Closed', color: 'gray', description: 'Closed without resolution' },
-  { id: 'DUPLICATE', label: 'Duplicate', color: 'gray', description: 'Duplicate case' },
+  { id: 'CANCELLED', label: 'Cancelled', color: 'gray', description: 'Cancelled case' },
 ];
 
 export const VOLUNTEER_SKILLS: { id: VolunteerSkill; label: string; icon: string }[] = [
@@ -124,7 +122,10 @@ export function calculateSLADeadline(priority: CasePriority): Date {
 }
 
 export function isSLABreached(slaDeadline: Date, status: CaseStatus): boolean {
-  const resolvedStatuses: CaseStatus[] = ['RESOLVED', 'CLOSED', 'DUPLICATE'];
+  const resolvedStatuses: CaseStatus[] = ['RESOLVED', 'CLOSED', 'CANCELLED'];
   if (resolvedStatuses.includes(status)) return false;
   return new Date() > new Date(slaDeadline);
 }
+
+// Re-export types for convenience
+export type { VolunteerSkill, VolunteerRole, Vulnerability, AidCategory } from '@/lib/types/dracp';

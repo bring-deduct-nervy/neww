@@ -17,7 +17,8 @@ import {
   CheckCircle,
   Zap,
   Globe,
-  Clock
+  Clock,
+  LogIn
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -42,8 +43,31 @@ const stats = [
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
+      {/* Navigation Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-white/10">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <Link to="/landing" className="flex items-center gap-2">
+            <Shield className="h-7 w-7 text-cyan-400" />
+            <span className="font-bold text-xl gradient-text">ResQ-Unified</span>
+          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/auth/signin">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-white">
+                <LogIn className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+            </Link>
+            <Link to="/auth/signup">
+              <Button size="sm" className="bg-cyan-600 hover:bg-cyan-500">
+                Get Started
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden pt-16">
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/20 via-background to-purple-600/20" />
         <div className="absolute inset-0 opacity-10 bg-grid-pattern" />
         

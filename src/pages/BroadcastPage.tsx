@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BroadcastMessage, BroadcastChannel, BroadcastAudience, BroadcastStatus } from "@/lib/types/dracp";
 import { SRI_LANKA_DISTRICTS, SMS_TEMPLATES } from "@/lib/constants/dracp";
+import { supabase } from "@/lib/supabase";
+import { realtimeService } from "@/lib/api/realtime-service";
 import {
   Megaphone,
   Send,
@@ -24,13 +26,15 @@ import {
   Filter,
   Plus,
   Eye,
-  Trash2
+  Trash2,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-// Mock broadcast history
-const mockBroadcasts: BroadcastMessage[] = [
+// Fallback broadcast history
+const fallbackBroadcasts: BroadcastMessage[] = [
   {
     id: '1',
     title: 'Flood Warning - Western Province',
@@ -101,6 +105,58 @@ export function BroadcastPage() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isScheduled, setIsScheduled] = useState(false);
+  const [broadcasts, setBroadcasts] = useState<BroadcastMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBroadcasts();
+
+    const unsubscribe = realtimeService.subscribe({
+      table: 'broadcasts',
+      callback: () => fetchBroadcasts()
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const fetchBroadcasts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('broadcasts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const mapped = data.map((b: any) => ({
+          id: b.id,
+          title: b.title,
+          content: b.message,
+          channels: b.channels || ['SMS'],
+          audience: 'ALL_BENEFICIARIES' as BroadcastAudience,
+          targetDistricts: b.target_districts || [],
+          targetRoles: b.target_roles || [],
+          status: b.status || 'DRAFT',
+          recipientCount: b.recipients_count || 0,
+          deliveredCount: b.recipients_count || 0,
+          failedCount: 0,
+          scheduledFor: b.scheduled_for ? new Date(b.scheduled_for) : undefined,
+          sentAt: b.sent_at ? new Date(b.sent_at) : undefined,
+          createdAt: new Date(b.created_at),
+          createdBy: b.sent_by || ''
+        }));
+        setBroadcasts(mapped);
+      } else {
+        setBroadcasts(fallbackBroadcasts);
+      }
+    } catch (err) {
+      console.error('Error fetching broadcasts:', err);
+      setBroadcasts(fallbackBroadcasts);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const toggleChannel = (channel: BroadcastChannel) => {
     setSelectedChannels(prev =>
@@ -155,7 +211,7 @@ export function BroadcastPage() {
           <Card className="glass-card border-cyan-500/30">
             <CardContent className="p-4 text-center">
               <Send className="h-5 w-5 mx-auto text-cyan-400 mb-2" />
-              <p className="text-2xl font-bold">{mockBroadcasts.length}</p>
+              <p className="text-2xl font-bold">{broadcasts.length}</p>
               <p className="text-xs text-muted-foreground">Total Broadcasts</p>
             </CardContent>
           </Card>
@@ -163,7 +219,7 @@ export function BroadcastPage() {
             <CardContent className="p-4 text-center">
               <CheckCircle className="h-5 w-5 mx-auto text-green-400 mb-2" />
               <p className="text-2xl font-bold">
-                {mockBroadcasts.reduce((sum, b) => sum + b.deliveredCount, 0).toLocaleString()}
+                {broadcasts.reduce((sum, b) => sum + b.deliveredCount, 0).toLocaleString()}
               </p>
               <p className="text-xs text-muted-foreground">Messages Delivered</p>
             </CardContent>
@@ -172,7 +228,7 @@ export function BroadcastPage() {
             <CardContent className="p-4 text-center">
               <Clock className="h-5 w-5 mx-auto text-blue-400 mb-2" />
               <p className="text-2xl font-bold">
-                {mockBroadcasts.filter(b => b.status === 'SCHEDULED').length}
+                {broadcasts.filter(b => b.status === 'SCHEDULED').length}
               </p>
               <p className="text-xs text-muted-foreground">Scheduled</p>
             </CardContent>
@@ -181,7 +237,7 @@ export function BroadcastPage() {
             <CardContent className="p-4 text-center">
               <Users className="h-5 w-5 mx-auto text-yellow-400 mb-2" />
               <p className="text-2xl font-bold">
-                {mockBroadcasts.reduce((sum, b) => sum + b.recipientCount, 0).toLocaleString()}
+                {broadcasts.reduce((sum, b) => sum + b.recipientCount, 0).toLocaleString()}
               </p>
               <p className="text-xs text-muted-foreground">Total Recipients</p>
             </CardContent>
@@ -338,7 +394,7 @@ export function BroadcastPage() {
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4">
-            {mockBroadcasts.map((broadcast, index) => (
+            {broadcasts.map((broadcast, index) => (
               <motion.div
                 key={broadcast.id}
                 initial={{ opacity: 0, y: 20 }}

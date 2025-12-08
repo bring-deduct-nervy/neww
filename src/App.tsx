@@ -1,8 +1,10 @@
-import { Suspense } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Suspense, useEffect, useState } from "react";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { OfflineIndicator } from "@/components/offline/OfflineIndicator";
+import { Toaster } from "@/components/ui/toaster";
 import { Dashboard } from "@/pages/Dashboard";
 import { WeatherPage } from "@/pages/WeatherPage";
 import { AlertsPage } from "@/pages/AlertsPage";
@@ -28,10 +30,61 @@ import { AnalyticsPage } from "@/pages/AnalyticsPage";
 import { ResourceManagementPage } from "@/pages/ResourceManagementPage";
 import { LandingPage } from "@/pages/LandingPage";
 import { AuthPage } from "@/pages/AuthPage";
+import { supabase } from "@/lib/supabase";
+
+// Protected Route Component
+function ProtectedRoute({ children, requiredRole }: { children: React.ReactNode; requiredRole?: string }) {
+  const { isAuthenticated, isLoading, hasRole } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-cyan-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/auth/signin" state={{ from: location }} replace />;
+  }
+
+  if (requiredRole && !hasRole(requiredRole as any)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
 
 function AppContent() {
   const location = useLocation();
+  const [alertCount, setAlertCount] = useState(0);
   const isLandingOrAuth = location.pathname === '/landing' || location.pathname.startsWith('/auth');
+
+  // Fetch active alerts count
+  useEffect(() => {
+    const fetchAlertCount = async () => {
+      const { count } = await supabase
+        .from('alerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+      setAlertCount(count || 0);
+    };
+
+    fetchAlertCount();
+
+    // Subscribe to alerts changes
+    const channel = supabase
+      .channel('alerts_count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'alerts' }, () => {
+        fetchAlertCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   if (isLandingOrAuth) {
     return (
@@ -45,10 +98,11 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header alertCount={3} />
+      <Header alertCount={alertCount} />
       <OfflineIndicator />
-      <main>
+      <main className="pb-20">
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Dashboard />} />
           <Route path="/weather" element={<WeatherPage />} />
           <Route path="/alerts" element={<AlertsPage />} />
@@ -60,23 +114,33 @@ function AppContent() {
           <Route path="/missing" element={<MissingPersonsPage />} />
           <Route path="/volunteer" element={<VolunteerPage />} />
           <Route path="/donate" element={<DonatePage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/settings" element={<ProfilePage />} />
-          {/* DRACP Routes */}
-          <Route path="/cases" element={<CaseManagementPage />} />
           <Route path="/register" element={<BeneficiaryRegistrationPage />} />
-          <Route path="/volunteer-dashboard" element={<VolunteerDashboardPage />} />
-          <Route path="/broadcast" element={<BroadcastPage />} />
-          <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/track" element={<CaseTrackingPage />} />
-          <Route path="/admin/settings" element={<AdminSettingsPage />} />
-          <Route path="/admin/users" element={<UserManagementPage />} />
-          <Route path="/admin/import" element={<DataImportPage />} />
-          <Route path="/admin/analytics" element={<AnalyticsPage />} />
-          <Route path="/resources" element={<ResourceManagementPage />} />
+          
+          {/* Protected Routes */}
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          
+          {/* Volunteer Routes */}
+          <Route path="/volunteer-dashboard" element={<ProtectedRoute requiredRole="VOLUNTEER"><VolunteerDashboardPage /></ProtectedRoute>} />
+          
+          {/* Case Manager Routes */}
+          <Route path="/cases" element={<ProtectedRoute requiredRole="CASE_MANAGER"><CaseManagementPage /></ProtectedRoute>} />
+          
+          {/* Coordinator Routes */}
+          <Route path="/broadcast" element={<ProtectedRoute requiredRole="COORDINATOR"><BroadcastPage /></ProtectedRoute>} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<ProtectedRoute requiredRole="ADMIN"><AdminDashboardPage /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute requiredRole="ADMIN"><AdminSettingsPage /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute requiredRole="ADMIN"><UserManagementPage /></ProtectedRoute>} />
+          <Route path="/admin/import" element={<ProtectedRoute requiredRole="ADMIN"><DataImportPage /></ProtectedRoute>} />
+          <Route path="/admin/analytics" element={<ProtectedRoute requiredRole="ADMIN"><AnalyticsPage /></ProtectedRoute>} />
+          <Route path="/resources" element={<ProtectedRoute requiredRole="ADMIN"><ResourceManagementPage /></ProtectedRoute>} />
         </Routes>
       </main>
       <MobileNav />
+      <Toaster />
     </div>
   );
 }

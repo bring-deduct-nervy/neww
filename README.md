@@ -1,30 +1,355 @@
-# React + TypeScript + Vite
+# ResQ-Unified - Disaster Response & Community Alert System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+<div align="center">
+  
+  **A comprehensive disaster response platform for Sri Lanka**
+  
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+  [![React](https://img.shields.io/badge/React-18.3-61dafb.svg)](https://reactjs.org/)
+  [![Supabase](https://img.shields.io/badge/Supabase-Backend-3ecf8e.svg)](https://supabase.com/)
+</div>
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🌟 Overview
 
-## Expanding the ESLint configuration
+ResQ-Unified is a production-ready disaster response and community alert system designed specifically for Sri Lanka. It provides real-time flood predictions, emergency response coordination, volunteer management, and community support during natural disasters.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+### Key Features
 
-- Configure the top-level `parserOptions` property like this:
+- 🚨 **Real-time Alerts** - Instant emergency notifications with severity levels
+- 🗺️ **Crisis Map** - Live emergency locations with interactive mapping
+- 🏠 **Shelter Finder** - Find nearby safe shelters with capacity tracking
+- 👥 **Volunteer Network** - Coordinate relief efforts with skill-based matching
+- 🔍 **Missing Persons** - Help reunite families during emergencies
+- 🌧️ **Weather Monitoring** - Flood risk predictions using Open-Meteo API
+- 💰 **Donation Portal** - Support relief efforts with secure donations
+- 🤖 **AI Assistant** - 24/7 emergency guidance and support
+- 📊 **Analytics Dashboard** - Real-time statistics and insights
+- 📱 **Mobile-First Design** - Responsive UI for all devices
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
+---
+
+## 🔐 Admin Credentials
+
+For testing and demonstration purposes:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | `admin@resq-unified.lk` | `Admin@123!` |
+| Coordinator | `coordinator@resq-unified.lk` | `Coord@123!` |
+| Case Manager | `casemanager@resq-unified.lk` | `Case@123!` |
+| Volunteer | `volunteer@resq-unified.lk` | `Vol@123!` |
+
+> ⚠️ **Important**: Change these credentials immediately in production!
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Frontend (React + Vite)                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Landing Page │ Dashboard │ Admin Panel │ Mobile Views          │
+├─────────────────────────────────────────────────────────────────┤
+│                     State Management (Zustand)                   │
+├─────────────────────────────────────────────────────────────────┤
+│                        API Layer                                 │
+│  Weather API │ Alerts API │ Cases API │ Volunteers API          │
+├─────────────────────────────────────────────────────────────────┤
+│                     Supabase Backend                             │
+│  PostgreSQL │ Auth │ Realtime │ Storage │ Edge Functions        │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+- Supabase account
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-org/resq-unified.git
+   cd resq-unified
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Environment Setup**
+   
+   Create a `.env` file with the following variables:
+   ```env
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+   Navigate to `http://localhost:5173`
+
+---
+
+## 📁 Project Structure
+
+```
+resq-unified/
+├── src/
+│   ├── components/          # Reusable UI components
+│   │   ├── alerts/          # Alert-related components
+│   │   ├── community/       # Community features
+│   │   ├── dashboard/       # Dashboard widgets
+│   │   ├── emergency/       # Emergency response
+│   │   ├── family/          # Family safety features
+│   │   ├── layout/          # Layout components
+│   │   ├── offline/         # Offline support
+│   │   ├── prediction/      # Flood prediction
+│   │   ├── resources/       # Resource management
+│   │   ├── river/           # River level monitoring
+│   │   ├── shelters/        # Shelter components
+│   │   ├── ui/              # ShadCN UI components
+│   │   └── weather/         # Weather components
+│   ├── contexts/            # React contexts
+│   ├── hooks/               # Custom React hooks
+│   ├── lib/                 # Utilities and APIs
+│   │   ├── api/             # API functions
+│   │   ├── constants/       # App constants
+│   │   └── types/           # TypeScript types
+│   ├── pages/               # Page components
+│   ├── stores/              # Zustand stores
+│   └── stories/             # Storybook stories
+├── supabase/
+│   ├── functions/           # Edge functions
+│   │   ├── process-document/
+│   │   ├── send-sms/
+│   │   └── sync-weather/
+│   └── migrations/          # Database migrations
+└── public/                  # Static assets
+```
+
+---
+
+## 🔧 Configuration
+
+### API Configuration
+
+The system supports both free and paid APIs. Configure in Admin Settings:
+
+| Service | Free Option | Paid Option |
+|---------|-------------|-------------|
+| Weather | Open-Meteo (default) | OpenWeatherMap |
+| Maps | OpenStreetMap (default) | Google Maps |
+| SMS | - | Twilio |
+| AI | - | OpenAI |
+
+### Role-Based Access Control
+
+| Role | Permissions |
+|------|-------------|
+| **SUPER_ADMIN** | Full system access, user management, settings |
+| **ADMIN** | Dashboard, analytics, case management, broadcasts |
+| **COORDINATOR** | Case assignment, volunteer coordination, broadcasts |
+| **CASE_MANAGER** | Case management, beneficiary registration |
+| **VOLUNTEER** | Assigned cases, status updates |
+| **USER** | Public features, emergency reporting |
+
+---
+
+## 📊 Database Schema
+
+### Core Tables
+
+- **user_profiles** - User accounts and roles
+- **beneficiaries** - Aid recipients
+- **volunteers** - Volunteer information
+- **cases** - Aid requests and cases
+- **shelters** - Relief shelter data
+- **alerts** - Emergency alerts
+- **river_levels** - River monitoring data
+- **weather_data** - Weather information
+- **donations** - Donation records
+- **resources** - Resource inventory
+
+### Real-time Features
+
+The following tables have real-time subscriptions enabled:
+- cases, alerts, shelters, volunteers
+- beneficiaries, river_levels, weather_data
+- emergency_reports, missing_persons, donations
+
+---
+
+## 🌐 API Endpoints
+
+### Edge Functions
+
+| Function | Description |
+|----------|-------------|
+| `process-document` | Extract data from uploaded documents (CSV, JSON, TXT) |
+| `send-sms` | Send SMS notifications via Twilio |
+| `sync-weather` | Sync weather data from Open-Meteo |
+
+### Weather API (Free - Open-Meteo)
+
+```typescript
+// Fetch weather data
+const weather = await fetchWeatherData(latitude, longitude);
+
+// Get flood risk prediction
+const risk = await getFloodRiskPrediction(district);
+```
+
+---
+
+## 📱 Features by Role
+
+### Public Users
+- View dashboard with weather and alerts
+- Find nearby shelters
+- Report emergencies
+- Search missing persons
+- Donate to relief efforts
+- Register as volunteer
+
+### Volunteers
+- View assigned cases
+- Update case status
+- Track completed cases
+- View performance metrics
+
+### Case Managers
+- Create and manage cases
+- Assign volunteers
+- Track SLA compliance
+- Generate reports
+
+### Administrators
+- Full dashboard access
+- User management
+- API key configuration
+- Data import/export
+- System settings
+- Analytics and reports
+
+---
+
+## 🔄 Data Import
+
+### Supported Formats
+- CSV files
+- JSON files
+- Text files
+
+### Auto-Detection
+The system automatically detects data types:
+- Beneficiaries
+- Volunteers
+- Shelters
+- Cases
+- River levels
+- Alerts
+
+### Import Process
+1. Navigate to Admin → Data Import
+2. Upload file (drag & drop or click)
+3. System processes and extracts data
+4. Review extracted information
+5. Data is automatically imported to database
+
+---
+
+## 🛡️ Security
+
+- **Authentication**: Supabase Auth with email/password
+- **Authorization**: Role-based access control (RBAC)
+- **Data Protection**: Row-level security (RLS) policies
+- **API Security**: Service role keys for edge functions
+- **Audit Logging**: All actions are logged
+
+---
+
+## 📈 Performance
+
+- **Lazy Loading**: Components loaded on demand
+- **Real-time Updates**: Supabase subscriptions
+- **Caching**: API response caching
+- **Optimized Queries**: Indexed database queries
+- **PWA Ready**: Offline support capabilities
+
+---
+
+## 🚀 Deployment
+
+### Production Build
+
+```bash
+npm run build
+```
+
+### Environment Variables (Production)
+
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_KEY=your_service_key
+```
+
+### Deploy to Vercel
+
+```bash
+vercel --prod
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- [Supabase](https://supabase.com/) - Backend infrastructure
+- [Open-Meteo](https://open-meteo.com/) - Free weather API
+- [ShadCN UI](https://ui.shadcn.com/) - UI components
+- [Lucide Icons](https://lucide.dev/) - Icon library
+- [Framer Motion](https://www.framer.com/motion/) - Animations
+
+---
+
+## 📞 Support
+
+For support, email support@resq-unified.lk or join our Slack channel.
+
+---
+
+<div align="center">
+  <p>Built with ❤️ for Sri Lanka</p>
+  <p>© 2024 ResQ-Unified. All rights reserved.</p>
+</div>
