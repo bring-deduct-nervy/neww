@@ -12,7 +12,8 @@ export type TableName =
   | 'missing_persons'
   | 'river_levels'
   | 'weather_data'
-  | 'flood_predictions';
+  | 'flood_predictions'
+  | 'broadcasts';
 
 export type ChangeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
 

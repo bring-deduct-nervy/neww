@@ -41,7 +41,7 @@ const mockTrackedCase: Case = {
     cases: [],
     totalAidReceived: 0
   },
-  category: 'FOOD_SUPPLIES',
+  category: 'FOOD',
   priority: 'HIGH',
   status: 'IN_PROGRESS',
   description: 'Family of 5 stranded due to flooding. Need food supplies for 3 days.',
@@ -80,8 +80,8 @@ const mockTrackedCase: Case = {
     {
       id: '1',
       caseId: '1',
-      fromStatus: 'NEW',
-      toStatus: 'TRIAGED',
+      fromStatus: 'PENDING',
+      toStatus: 'ASSIGNED',
       changedById: 'cm1',
       changedByName: 'Case Manager',
       createdAt: new Date(Date.now() - 22 * 60 * 60 * 1000)
@@ -89,7 +89,7 @@ const mockTrackedCase: Case = {
     {
       id: '2',
       caseId: '1',
-      fromStatus: 'TRIAGED',
+      fromStatus: 'ASSIGNED',
       toStatus: 'ASSIGNED',
       changedById: 'cm1',
       changedByName: 'Case Manager',
@@ -107,7 +107,7 @@ const mockTrackedCase: Case = {
   ]
 };
 
-const statusSteps: CaseStatus[] = ['NEW', 'TRIAGED', 'ASSIGNED', 'IN_PROGRESS', 'AID_DISPATCHED', 'RESOLVED'];
+const statusSteps: CaseStatus[] = ['PENDING', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
 export function CaseTrackingPage() {
   const [caseNumber, setCaseNumber] = useState('');

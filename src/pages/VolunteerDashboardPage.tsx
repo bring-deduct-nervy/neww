@@ -45,7 +45,7 @@ const fallbackVolunteer: Volunteer = {
   registeredAt: new Date('2024-01-15'),
   verifiedAt: new Date('2024-01-16'),
   isVerified: true,
-  displayCases: [],
+  assignedCases: [],
   completedCases: 45,
   slaMetrics: {
     totalCasesHandled: 52,
@@ -83,7 +83,7 @@ const fallbackAssignedCases: Case[] = [
       cases: [],
       totalAidReceived: 0
     },
-    category: 'FOOD_SUPPLIES',
+    category: 'FOOD',
     priority: 'HIGH',
     status: 'ASSIGNED',
     description: 'Family needs food supplies urgently',
@@ -185,7 +185,7 @@ export function VolunteerDashboardPage() {
           registeredAt: new Date(volunteerData.created_at),
           verifiedAt: volunteerData.verified_at ? new Date(volunteerData.verified_at) : undefined,
           isVerified: volunteerData.is_verified || false,
-          displayCases: [],
+          assignedCases: [],
           completedCases: volunteerData.completed_cases || 0,
           slaMetrics: {
             totalCasesHandled: volunteerData.total_cases_handled || 0,
@@ -266,6 +266,15 @@ export function VolunteerDashboardPage() {
 
   const displayVolunteer = volunteer || fallbackVolunteer;
   const displayCases = assignedCases.length > 0 ? assignedCases : fallbackAssignedCases;
+  const displayVolunteerName = displayVolunteer.name;
+  const displayVolunteerIsVerified = displayVolunteer.isVerified;
+  const displayVolunteerRole = displayVolunteer.role;
+  const displayVolunteerStatus = displayVolunteer.status;
+  const displayVolunteerDistrict = displayVolunteer.district;
+  const displayVolunteerRating = displayVolunteer.rating;
+  const displayVolunteerBadges = displayVolunteer.badges || [];
+  const displayVolunteerCompletedCases = displayVolunteer.completedCases || 0;
+  const displayVolunteerSlaMetrics = displayVolunteer.slaMetrics || { totalCasesHandled: 0, casesResolvedOnTime: 0, averageResponseTime: 0, averageResolutionTime: 0, slaComplianceRate: 0, customerSatisfactionScore: 0 };
 
   const formatTimeRemaining = (deadline: Date) => {
     const now = new Date();
@@ -290,29 +299,29 @@ export function VolunteerDashboardPage() {
             <div className="bg-gradient-to-r from-cyan-600/30 to-purple-600/30 p-6">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center text-2xl font-bold">
-                  {displayVolunteername.split(' ').map(n => n[0]).join('')}
+                  {displayVolunteerName.split(' ').map(n => n[0]).join('')}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold">{displayVolunteername}</h2>
-                    {displayVolunteerisVerified && (
+                    <h2 className="text-xl font-bold">{displayVolunteerName}</h2>
+                    {displayVolunteerIsVerified && (
                       <CheckCircle className="h-5 w-5 text-cyan-400" />
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{displayVolunteerrole.replace('_', ' ')}</p>
+                  <p className="text-sm text-muted-foreground">{displayVolunteerRole.replace('_', ' ')}</p>
                   <div className="flex items-center gap-2 mt-2">
                     <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                      {displayVolunteerstatus}
+                      {displayVolunteerStatus}
                     </Badge>
                     <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                      {displayVolunteerdistrict}
+                      {displayVolunteerDistrict}
                     </Badge>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="flex items-center gap-1 text-yellow-400">
                     <Star className="h-5 w-5 fill-current" />
-                    <span className="text-xl font-bold">{displayVolunteerrating}</span>
+                    <span className="text-xl font-bold">{displayVolunteerRating}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">Rating</p>
                 </div>
@@ -326,25 +335,25 @@ export function VolunteerDashboardPage() {
           <MetricCard
             icon={<ClipboardList className="h-5 w-5" />}
             label="Cases Handled"
-            value={displayVolunteerslaMetrics.totalCasesHandled}
+            value={displayVolunteerSlaMetrics.totalCasesHandled}
             color="cyan"
           />
           <MetricCard
             icon={<Target className="h-5 w-5" />}
             label="SLA Compliance"
-            value={`${displayVolunteerslaMetrics.slaComplianceRate}%`}
+            value={`${displayVolunteerSlaMetrics.slaComplianceRate}%`}
             color="green"
           />
           <MetricCard
             icon={<Zap className="h-5 w-5" />}
             label="Avg Response"
-            value={`${displayVolunteerslaMetrics.averageResponseTime}m`}
+            value={`${displayVolunteerSlaMetrics.averageResponseTime}m`}
             color="yellow"
           />
           <MetricCard
             icon={<Timer className="h-5 w-5" />}
             label="Avg Resolution"
-            value={`${displayVolunteerslaMetrics.averageResolutionTime}h`}
+            value={`${displayVolunteerSlaMetrics.averageResolutionTime}h`}
             color="purple"
           />
         </div>
@@ -359,7 +368,7 @@ export function VolunteerDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {displayVolunteerbadges.map(badge => (
+              {displayVolunteerBadges.map(badge => (
                 <div
                   key={badge.id}
                   className="flex-shrink-0 p-3 rounded-xl bg-white/5 border border-white/10 text-center min-w-[100px]"
@@ -379,7 +388,7 @@ export function VolunteerDashboardPage() {
               Assigned ({displayCases.length})
             </TabsTrigger>
             <TabsTrigger value="completed">
-              Completed ({displayVolunteercompletedCases})
+              Completed ({displayVolunteerCompletedCases})
             </TabsTrigger>
           </TabsList>
 
@@ -497,10 +506,10 @@ export function VolunteerDashboardPage() {
             <Card className="glass-card border-white/10">
               <CardContent className="p-6 text-center">
                 <TrendingUp className="h-12 w-12 mx-auto text-green-400 mb-4" />
-                <p className="text-2xl font-bold">{displayVolunteercompletedCases}</p>
+                <p className="text-2xl font-bold">{displayVolunteerCompletedCases}</p>
                 <p className="text-muted-foreground">Cases Completed</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {displayVolunteerslaMetrics.casesResolvedOnTime} resolved within SLA
+                  {displayVolunteerSlaMetrics.casesResolvedOnTime} resolved within SLA
                 </p>
               </CardContent>
             </Card>
@@ -519,26 +528,26 @@ export function VolunteerDashboardPage() {
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span>SLA Compliance</span>
-                <span className="text-green-400">{displayVolunteerslaMetrics.slaComplianceRate}%</span>
+                <span className="text-green-400">{displayVolunteerSlaMetrics.slaComplianceRate}%</span>
               </div>
-              <Progress value={displayVolunteerslaMetrics.slaComplianceRate} className="h-2" />
+              <Progress value={displayVolunteerSlaMetrics.slaComplianceRate} className="h-2" />
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span>Customer Satisfaction</span>
-                <span className="text-yellow-400">{displayVolunteerslaMetrics.customerSatisfactionScore}/5</span>
+                <span className="text-yellow-400">{displayVolunteerSlaMetrics.customerSatisfactionScore}/5</span>
               </div>
-              <Progress value={(displayVolunteerslaMetrics.customerSatisfactionScore / 5) * 100} className="h-2" />
+              <Progress value={(displayVolunteerSlaMetrics.customerSatisfactionScore / 5) * 100} className="h-2" />
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span>On-Time Resolution</span>
                 <span className="text-cyan-400">
-                  {Math.round((displayVolunteerslaMetrics.casesResolvedOnTime / displayVolunteerslaMetrics.totalCasesHandled) * 100)}%
+                  {Math.round((displayVolunteerSlaMetrics.casesResolvedOnTime / displayVolunteerSlaMetrics.totalCasesHandled) * 100)}%
                 </span>
               </div>
               <Progress 
-                value={(displayVolunteerslaMetrics.casesResolvedOnTime / displayVolunteerslaMetrics.totalCasesHandled) * 100} 
+                value={(displayVolunteerSlaMetrics.casesResolvedOnTime / displayVolunteerSlaMetrics.totalCasesHandled) * 100} 
                 className="h-2" 
               />
             </div>

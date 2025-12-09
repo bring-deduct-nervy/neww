@@ -323,33 +323,33 @@ export function AdminDashboardPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-cyan-400" />
-              Aid Distribution Summary
+              Cases by Aid Category
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-3 gap-4">
-              {stats.aidDistributed.map((aid, index) => {
-                const category = AID_CATEGORIES.find(c => c.id === aid.category);
+              {AID_CATEGORIES.map((category, index) => {
+                const count = stats.casesByCategory[category.id] || 0;
                 return (
                   <motion.div
-                    key={aid.category}
+                    key={category.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
                     className="p-4 rounded-xl bg-gradient-to-br from-cyan-600/20 to-purple-600/20 border border-cyan-500/20"
                   >
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-2xl">{category?.icon}</span>
-                      <span className="font-medium">{category?.label}</span>
+                      <span className="text-2xl">{category.icon}</span>
+                      <span className="font-medium">{category.label}</span>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Distributed</span>
-                        <span className="font-bold">{aid.totalQuantity.toLocaleString()} {aid.unit}</span>
+                        <span className="text-sm text-muted-foreground">Cases</span>
+                        <span className="font-bold">{count}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Beneficiaries</span>
-                        <span className="font-bold text-green-400">{aid.beneficiariesReached.toLocaleString()}</span>
+                        <span className="text-sm text-muted-foreground">Percentage</span>
+                        <span className="font-bold text-green-400">{stats.totalCases > 0 ? Math.round((count / stats.totalCases) * 100) : 0}%</span>
                       </div>
                     </div>
                   </motion.div>

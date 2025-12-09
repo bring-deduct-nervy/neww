@@ -220,7 +220,7 @@ export function MissingPersonsPage() {
           <Card className="glass-card border-white/10">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-red-400">
-                {mockMissingPersons.filter(p => p.status === 'MISSING').length}
+                {missingPersons.filter(p => p.status === 'MISSING').length}
               </p>
               <p className="text-xs text-muted-foreground">Missing</p>
             </CardContent>
@@ -228,7 +228,7 @@ export function MissingPersonsPage() {
           <Card className="glass-card border-white/10">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-yellow-400">
-                {mockMissingPersons.filter(p => p.status === 'SIGHTED').length}
+                {missingPersons.filter(p => p.status === 'SIGHTED').length}
               </p>
               <p className="text-xs text-muted-foreground">Sighted</p>
             </CardContent>
@@ -236,7 +236,7 @@ export function MissingPersonsPage() {
           <Card className="glass-card border-white/10">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-green-400">
-                {mockMissingPersons.filter(p => p.status === 'FOUND_SAFE').length}
+                {missingPersons.filter(p => p.status === 'FOUND_SAFE').length}
               </p>
               <p className="text-xs text-muted-foreground">Found Safe</p>
             </CardContent>
