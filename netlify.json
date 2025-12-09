@@ -1,0 +1,27 @@
+{
+  "dev": {
+    "command": "npm run dev",
+    "port": 3000
+  },
+  "build": {
+    "command": "npm run build",
+    "functions": "netlify/functions",
+    "publish": "dist",
+    "environment": {
+      "NODE_VERSION": "20.19.0",
+      "NODE_ENV": "production",
+      "NPM_FLAGS": "--include=dev"
+    }
+  },
+  "plugins": [],
+  "redirects": [
+    {
+      "from": "/*",
+      "to": "/index.html",
+      "status": 200,
+      "conditions": {
+        "Role": "none"
+      }
+    }
+  ]
+}

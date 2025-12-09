@@ -3,6 +3,7 @@
 command = "npm ci && npm run build"
 functions = "netlify/functions"
 publish = "dist"
+edge_functions = "netlify/edge-functions"
 
 # Environment variables - these should be set in Netlify dashboard
 # but we can provide defaults for build-time variables
@@ -11,10 +12,32 @@ NODE_VERSION = "20.19.0"
 NODE_ENV = "production"
 NPM_FLAGS = "--include=dev"
 
+# Build settings with timeout
+[build.processing]
+skip_processing = false
+
+[build.processing.css]
+bundle = true
+minify = true
+
+[build.processing.js]
+bundle = true
+minify = true
+
+[build.processing.html]
+pretty_urls = true
+
 # Redirect all non-file requests to index.html for SPA routing
 [[redirects]]
 from = "/*"
 to = "/index.html"
+status = 200
+conditions = { Role = "none" }
+
+# Sitemap redirect for PWA
+[[redirects]]
+from = "/sitemap.xml"
+to = "/.netlify/functions/sitemap"
 status = 200
 
 # Disable automatic preload of resources that might not exist
