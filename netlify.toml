@@ -1,0 +1,63 @@
+# Netlify Configuration for ResQ Unified Platform
+[build]
+command = "npm ci && npm run build"
+functions = "netlify/functions"
+publish = "dist"
+
+# Environment variables - these should be set in Netlify dashboard
+# but we can provide defaults for build-time variables
+[build.environment]
+NODE_VERSION = "18.17.0"
+NODE_ENV = "production"
+
+# Redirect all non-file requests to index.html for SPA routing
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+# Disable automatic preload of resources that might not exist
+[[headers]]
+for = "/*"
+[headers.values]
+X-Frame-Options = "SAMEORIGIN"
+X-Content-Type-Options = "nosniff"
+X-XSS-Protection = "1; mode=block"
+Referrer-Policy = "strict-origin-when-cross-origin"
+Permissions-Policy = "geolocation=(self), microphone=()"
+
+# Cache settings for static assets
+[[headers]]
+for = "/assets/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache HTML files for short duration
+[[headers]]
+for = "/*.html"
+[headers.values]
+Cache-Control = "public, max-age=3600"
+
+# API calls should not be cached
+[[headers]]
+for = "/api/*"
+[headers.values]
+Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Preload critical assets
+[[headers]]
+for = "/"
+[headers.values]
+Link = "</assets/index.css>; rel=preload; as=style, </assets/index.js>; rel=preload; as=script"
+
+# Retry configuration for deploy
+[context.production]
+command = "npm ci && npm run build"
+
+# Preview deploy (staging)
+[context.deploy-preview]
+command = "npm ci && npm run build"
+
+# Branch deploy
+[context.branch-deploy]
+command = "npm ci && npm run build"
