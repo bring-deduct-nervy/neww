@@ -39,6 +39,7 @@ export function Header({ alertCount = 0 }: HeaderProps) {
                 <NavLink to="/shelters" label="Find Shelters" />
                 <NavLink to="/missing" label="Missing Persons" />
                 <NavLink to="/weather" label="Weather" />
+                <NavLink to="/flood-monitor" label="Flood Monitor" />
                 <NavLink to="/alerts" label="Alerts" />
                 <NavLink to="/volunteer" label="Volunteer" />
                 <NavLink to="/directory" label="Emergency Contacts" />

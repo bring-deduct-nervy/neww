@@ -7,6 +7,7 @@ import { OfflineIndicator } from "@/components/offline/OfflineIndicator";
 import { Toaster } from "@/components/ui/toaster";
 import { Dashboard } from "@/pages/Dashboard";
 import { WeatherPage } from "@/pages/WeatherPage";
+import { FloodMonitoringPage } from "@/pages/FloodMonitoringPage";
 import { AlertsPage } from "@/pages/AlertsPage";
 import { SheltersPage } from "@/pages/SheltersPage";
 import { DirectoryPage } from "@/pages/DirectoryPage";
@@ -105,6 +106,7 @@ function AppContent() {
           {/* Public Routes */}
           <Route path="/" element={<Dashboard />} />
           <Route path="/weather" element={<WeatherPage />} />
+          <Route path="/flood-monitor" element={<FloodMonitoringPage />} />
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/shelters" element={<SheltersPage />} />
           <Route path="/directory" element={<DirectoryPage />} />

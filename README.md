@@ -72,9 +72,10 @@ For testing and demonstration purposes:
 
 - Node.js 18+ 
 - npm or yarn
-- Supabase account
+- Supabase account (free tier available at https://supabase.com)
+- Git for version control
 
-### Installation
+### Quick Start (5 minutes)
 
 1. **Clone the repository**
    ```bash
@@ -82,23 +83,97 @@ For testing and demonstration purposes:
    cd resq-unified
    ```
 
-2. **Install dependencies**
+2. **Run setup script**
    ```bash
-   npm install
+   bash scripts/setup-dev.sh
    ```
 
-3. **Environment Setup**
-   
-   Create a `.env` file with the following variables:
-   ```env
-   VITE_SUPABASE_URL=your_supabase_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+3. **Configure environment**
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local and add your Supabase credentials
    ```
 
-4. **Run the development server**
+4. **Start development server**
    ```bash
    npm run dev
    ```
+
+5. **Open in browser**
+   ```
+   http://localhost:5173
+   ```
+
+### Detailed Installation
+
+#### Step 1: Create Supabase Project
+
+1. Go to https://supabase.com and sign up
+2. Create a new project (free tier available)
+3. Wait for project initialization
+4. Go to Project Settings → API
+5. Copy your **Project URL** and **Anon Key**
+
+#### Step 2: Clone & Install
+
+```bash
+git clone https://github.com/your-org/resq-unified.git
+cd resq-unified
+npm install
+```
+
+#### Step 3: Configure Environment
+
+```bash
+# Copy example environment file
+cp .env.example .env.local
+
+# Edit with your Supabase credentials
+# VITE_SUPABASE_URL=https://your-project.supabase.co
+# VITE_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+#### Step 4: Initialize Database
+
+```bash
+# Install Supabase CLI (optional but recommended)
+npm install -g supabase
+
+# Login to Supabase
+supabase login
+
+# Apply database migrations
+supabase link --project-id your-project-id
+supabase db push
+```
+
+#### Step 5: Start Development
+
+```bash
+npm run dev
+```
+
+The application will be available at `http://localhost:5173`
+
+### Available Scripts
+
+```bash
+# Development
+npm run dev           # Start dev server
+npm run preview       # Preview production build locally
+
+# Building
+npm run build         # Build for production
+npm run build-no-errors # Build ignoring TypeScript errors
+
+# Code Quality
+npm run lint          # Run ESLint
+npm run type-check    # Check TypeScript types
+
+# Database
+supabase db push      # Apply migrations
+supabase functions deploy # Deploy edge functions
+```
 
 5. **Open your browser**
    Navigate to `http://localhost:5173`

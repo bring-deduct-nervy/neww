@@ -104,6 +104,34 @@ export async function upsertSystemSetting(data: SystemSettingData) {
   return result;
 }
 
+export async function getSystemConfig(): Promise<Record<string, any>> {
+  const { data, error } = await supabase
+    .from('system_settings')
+    .select('key, value');
+
+  if (error) return {};
+  
+  const config: Record<string, any> = {};
+  data.forEach(setting => {
+    config[setting.key] = setting.value;
+  });
+  return config;
+}
+
+export async function updateSystemConfig(key: string, value: any) {
+  const { data, error } = await supabase
+    .from('system_settings')
+    .upsert(
+      { key, value, updated_at: new Date().toISOString() },
+      { onConflict: 'key' }
+    )
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function getDashboardStats() {
   const [cases, beneficiaries, volunteers, shelters, alerts] = await Promise.all([
     supabase.from('cases').select('status, priority, category, district, created_at'),
