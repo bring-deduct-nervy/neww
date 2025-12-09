@@ -155,6 +155,76 @@ npm run dev
 
 The application will be available at `http://localhost:5173`
 
+---
+
+## 🚀 Production Deployment
+
+### Netlify Deployment (Recommended)
+
+1. **Connect Repository**
+   - Go to https://netlify.com
+   - Click "New site from Git"
+   - Select your GitHub repository
+   - Branch: `main`
+
+2. **Build Settings**
+   - Build command: `npm ci && npm run build`
+   - Publish directory: `dist`
+   - Node version: 18.17.0 (auto-detected from .nvmrc)
+
+3. **Environment Variables**
+   Set in Netlify dashboard:
+   ```
+   VITE_SUPABASE_URL=https://your-project-id.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
+
+4. **Deploy**
+   - Push to main branch
+   - Netlify automatically builds and deploys
+
+### Docker Deployment
+
+```dockerfile
+FROM node:18-alpine as builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:18-alpine
+WORKDIR /app
+RUN npm install -g serve
+COPY --from=builder /app/dist ./dist
+EXPOSE 3000
+CMD ["serve", "-s", "dist", "-l", "3000"]
+```
+
+Build and run:
+```bash
+docker build -t resq-unified .
+docker run -p 3000:3000 resq-unified
+```
+
+### Vercel Deployment
+
+1. Push repository to GitHub
+2. Go to https://vercel.com
+3. Import project from GitHub
+4. Add environment variables
+5. Deploy
+
+### Custom Server (Node.js)
+
+```bash
+npm run build
+npm install -g serve
+serve -s dist -l 3000
+```
+
+---
+
 ### Available Scripts
 
 ```bash
@@ -177,6 +247,23 @@ supabase functions deploy # Deploy edge functions
 
 5. **Open your browser**
    Navigate to `http://localhost:5173`
+
+---
+
+## 📊 Production Checklist
+
+- [x] All TypeScript errors resolved
+- [x] Build succeeds without warnings
+- [x] Environment variables configured
+- [x] Database migrations applied
+- [x] Authentication tested
+- [x] All roles functional
+- [x] Real-time subscriptions working
+- [x] Security headers configured
+- [x] Cache headers optimized
+- [x] Mobile responsiveness verified
+
+See [PRODUCTION_DEPLOYMENT_CHECKLIST.md](./PRODUCTION_DEPLOYMENT_CHECKLIST.md) for complete checklist.
 
 ---
 
