@@ -7,8 +7,9 @@ publish = "dist"
 # Environment variables - these should be set in Netlify dashboard
 # but we can provide defaults for build-time variables
 [build.environment]
-NODE_VERSION = "18.17.0"
+NODE_VERSION = "20.19.0"
 NODE_ENV = "production"
+NPM_FLAGS = "--include=dev"
 
 # Redirect all non-file requests to index.html for SPA routing
 [[redirects]]
