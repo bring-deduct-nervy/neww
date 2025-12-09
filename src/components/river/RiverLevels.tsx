@@ -139,7 +139,7 @@ export function RiverLevels({ compact = false }: RiverLevelsProps) {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const mapped: RiverLevel[] = riverData.map((r: any) => ({
+        const mapped: RiverLevel[] = data.map((r: any) => ({
           id: r.id,
           riverName: r.river_name,
           stationName: r.station_name,

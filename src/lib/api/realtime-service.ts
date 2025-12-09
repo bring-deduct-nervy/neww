@@ -42,14 +42,14 @@ class RealtimeService {
       const channel = supabase
         .channel(channelKey)
         .on(
-          'postgres_changes',
+          'postgres_changes' as const,
           {
             event: config.event || '*',
             schema: 'public',
             table: config.table,
             filter: config.filter
-          },
-          (payload) => {
+          } as any,
+          (payload: any) => {
             const subs = this.subscriptions.get(channelKey) || [];
             subs.forEach(sub => sub.callback(payload));
           }

@@ -134,17 +134,12 @@ export function BroadcastPage() {
           title: b.title,
           content: b.message,
           channels: b.channels || ['SMS'],
-          audience: 'ALL_BENEFICIARIES' as BroadcastAudience,
-          targetDistricts: b.target_districts || [],
-          targetRoles: b.target_roles || [],
+          targetAudience: 'ALL_BENEFICIARIES' as BroadcastAudience,
+          districts: b.target_districts || [],
           status: b.status || 'DRAFT',
           recipientCount: b.recipients_count || 0,
           deliveredCount: b.recipients_count || 0,
-          failedCount: 0,
-          scheduledFor: b.scheduled_for ? new Date(b.scheduled_for) : undefined,
-          sentAt: b.sent_at ? new Date(b.sent_at) : undefined,
-          createdAt: new Date(b.created_at),
-          createdBy: b.sent_by || ''
+          createdById: b.sent_by || ''
         }));
         setBroadcasts(mapped);
       } else {
