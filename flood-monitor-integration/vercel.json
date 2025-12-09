@@ -1,0 +1,31 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "app/main.py",
+            "use": "@vercel/python"
+        },
+        {
+            "src": "index.html",
+            "use": "@vercel/static"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/",
+            "dest": "/index.html"
+        },
+        {
+            "src": "/dashboard",
+            "dest": "/index.html"
+        },
+        {
+            "src": "/api/(.*)",
+            "dest": "app/main.py"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "app/main.py"
+        }
+    ]
+}
